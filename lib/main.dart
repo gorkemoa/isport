@@ -4,6 +4,7 @@ import 'viewmodels/auth_viewmodels.dart';
 import 'models/auth_models.dart';
 import 'views/login_screen.dart';
 import 'views/home_screen.dart';
+import 'viewmodels/job_viewmodel.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,8 +15,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AuthViewModel(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthViewModel>(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider<JobViewModel>(
+          create: (context) => JobViewModel(context.read<AuthViewModel>()),
+        ),
+      ],
       child: MaterialApp(
         title: 'iSport App',
         theme: ThemeData(
