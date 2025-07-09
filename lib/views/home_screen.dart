@@ -197,9 +197,19 @@ class JobCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => JobDetailScreen(jobId: job.jobID),
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true, // İçeriğin yüksekliğine göre ayarlanmasını sağlar
+          backgroundColor: Colors.transparent, // Arka planı transparan yapıp alttaki container'a yetki ver
+          builder: (_) => Container(
+            decoration: const BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: JobDetailBottomSheet(jobId: job.jobID),
           ),
         );
       },
@@ -216,40 +226,72 @@ class JobCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Logo
                 Image.network(
                   job.jobImage,
-                  width: 30,
-                  height: 30,
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.contain,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
+                // Job Title, Company Name
                 Expanded(
-                  child: Text(
-                    job.jobTitle,
-                    style: AppTextStyles.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.jobTitle,
+                        style: AppTextStyles.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        job.compName,
+                        style: AppTextStyles.company,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-              job.compName,
-              style: AppTextStyles.company,
-            ),
+                const SizedBox(width: 8),
+                // Favorite Button
+                Consumer<JobViewModel>(
+                  builder: (context, jobViewModel, child) {
+                    return GestureDetector(
+                      onTap: () async {
+                        await jobViewModel.toggleJobFavorite(job.jobID);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Icon(
+                          job.isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: job.isFavorite ? Colors.redAccent : AppColors.textLight,
+                          size: 24,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
-            const SizedBox(height: AppPaddings.item / 2),
-           Text(
-            job.jobDesc,
-            style: AppTextStyles.body,
-           ),
             const SizedBox(height: AppPaddings.card),
+            // Bottom Info Row
             Row(
               children: [
-                _buildIconText(
-                    context, Icons.location_on_outlined, '${job.jobCity}, ${job.jobDistrict}'),
-                const Spacer(),
+                Expanded(
+                  child: _buildIconText(
+                      context, Icons.location_on_outlined, '${job.jobCity}, ${job.jobDistrict}'),
+                ),
+                const SizedBox(width: 16),
                 _buildIconText(
                     context, Icons.access_time_outlined, job.showDate),
+                 const SizedBox(width: 16),
+                _buildIconText(
+                    context, Icons.work_outline, job.workType),
               ],
             ),
           ],
@@ -268,6 +310,8 @@ class JobCard extends StatelessWidget {
           child: Text(
             text,
             style: AppTextStyles.body.copyWith(color: AppColors.textLight),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],

@@ -300,9 +300,19 @@ class ApplicationsScreen extends StatelessWidget {
   }
 
   void _navigateToJobDetail(BuildContext context, int jobId) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => JobDetailScreen(jobId: jobId),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // İçeriğin yüksekliğine göre ayarlanmasını sağlar
+      backgroundColor: Colors.transparent, // Arka planı transparan yapıp alttaki container'a yetki ver
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: JobDetailBottomSheet(jobId: jobId),
       ),
     );
   }

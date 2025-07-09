@@ -9,6 +9,7 @@ class AuthService {
   // API sabitleri
   static const String _baseUrl = 'https://api.rivorya.com/isport';
   static const String _loginEndpoint = '/service/auth/login';
+  static const String _registerEndpoint = '/service/auth/register';
   
   // Basic Auth sabitleri
   static const String _basicAuthUsername = 'Tr2BUhR2ICWHJN2nlvp9T5ycBoyMJD';
@@ -76,6 +77,43 @@ class AuthService {
         error: true,
         success: false,
         message410: 'Network Error: $e',
+      );
+    }
+  }
+
+  /// Kullanıcı kaydı yapar
+  Future<RegisterResponse> register(RegisterRequest registerRequest) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_registerEndpoint');
+      final headers = getHeaders();
+      final body = jsonEncode(registerRequest.toJson());
+
+      logger.d('Kayıt İsteği: $body');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Kayıt Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410 || response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        final registerResponse = RegisterResponse.fromJson(jsonData);
+        return registerResponse;
+      } else {
+        return RegisterResponse(
+          error: true,
+          success: false,
+          message410: 'HTTP Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      return RegisterResponse(
+        error: true,
+        success: false,
+        message410: 'Ağ Hatası: $e',
       );
     }
   }

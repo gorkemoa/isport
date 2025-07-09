@@ -6,15 +6,15 @@ import '../models/job_detail_models.dart';
 import '../services/job_service.dart';
 import '../viewmodels/auth_viewmodels.dart';
 
-class JobDetailScreen extends StatefulWidget {
+class JobDetailBottomSheet extends StatefulWidget {
   final int jobId;
-  const JobDetailScreen({super.key, required this.jobId});
+  const JobDetailBottomSheet({super.key, required this.jobId});
 
   @override
-  State<JobDetailScreen> createState() => _JobDetailScreenState();
+  State<JobDetailBottomSheet> createState() => _JobDetailBottomSheetState();
 }
 
-class _JobDetailScreenState extends State<JobDetailScreen> {
+class _JobDetailBottomSheetState extends State<JobDetailBottomSheet> {
   late Future<JobDetailResponse> _jobDetailFuture;
   final JobService _jobService = JobService();
 
@@ -29,6 +29,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Future<JobDetailResponse> _fetchJobDetail() async {
+    // Provider'ı dinlemeden alalım çünkü sadece bir kez token'a ihtiyacımız var.
     final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
     final String? token = await authViewModel.getToken();
     final response = await _jobService.getJobDetail(jobId: widget.jobId, userToken: token);
@@ -47,41 +48,102 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<JobDetailResponse>(
-      future: _jobDetailFuture,
-      builder: (context, snapshot) {
-        final JobDetail? job = snapshot.data?.data?.job;
+    // Bottom sheet için genel bir yapı
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      child: FutureBuilder<JobDetailResponse>(
+        future: _jobDetailFuture,
+        builder: (context, snapshot) {
+          final JobDetail? job = snapshot.data?.data?.job;
 
-        return Scaffold(
-          backgroundColor: AppColors.background,
-          appBar: AppBar(
-            title: Text(job?.jobTitle ?? 'İlan Detayı'),
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            actions: job != null && (_isFavorite != null)
-                ? [
-                    IconButton(
-                      icon: Icon(_isFavorite! ? Icons.favorite : Icons.favorite_border),
-                      color: _isFavorite! ? Colors.redAccent : Colors.white,
-                      tooltip: 'Favorilere Ekle',
-                      onPressed: () {
-                        setState(() {
-                          _isFavorite = !_isFavorite!;
-                          // TODO: API'ye favori durumunu güncelleme isteği gönderilecek.
-                        });
-                      },
-                    ),
-                  ]
-                : [],
-          ),
-          body: _buildBody(snapshot),
-          bottomNavigationBar: (job != null && job.isActive && _isApplied != null) ? _buildApplyButton(job) : null,
-        );
-      },
+          return Column(
+            children: [
+              _buildDragHandle(),
+              Expanded(
+                child: _buildBody(snapshot, job),
+              ),
+              if (job != null && job.isActive && _isApplied != null) _buildApplyButton(job),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildBody(AsyncSnapshot<JobDetailResponse> snapshot) {
+  Widget _buildDragHandle() {
+    return Container(
+      width: 40,
+      height: 5,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(12),
+      ),
+    );
+  }
+
+  Future<void> _toggleFavorite(int jobID) async {
+    if (_isFavorite == null) return;
+
+    try {
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      final String? token = await authViewModel.getToken();
+      
+      if (token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Giriş yapmanız gerekiyor.')),
+        );
+        return;
+      }
+
+      // Optimistic update - UI'ı hemen güncelle
+      final currentStatus = _isFavorite!;
+      setState(() {
+        _isFavorite = !currentStatus;
+      });
+
+      // API çağrısını yap
+      final response = currentStatus
+          ? await _jobService.removeJobFromFavorites(userToken: token, jobID: jobID)
+          : await _jobService.addJobToFavorites(userToken: token, jobID: jobID);
+
+      if (response.success) {
+        // Başarılı, snackbar göster
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message ?? (currentStatus ? 'Favorilerden kaldırıldı.' : 'Favorilere eklendi.')),
+            backgroundColor: AppColors.primary,
+          ),
+        );
+      } else {
+        // Başarısız, geri al
+        setState(() {
+          _isFavorite = currentStatus;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(response.message ?? 'Favori durumu güncellenemedi.'),
+            backgroundColor: Colors.red.shade400,
+          ),
+        );
+      }
+    } catch (e) {
+      // Hata durumunda geri al
+      setState(() {
+        _isFavorite = !_isFavorite!;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Bir hata oluştu: $e'),
+          backgroundColor: Colors.red.shade400,
+        ),
+      );
+    }
+  }
+
+  Widget _buildBody(AsyncSnapshot<JobDetailResponse> snapshot, JobDetail? job) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
@@ -94,9 +156,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       return _buildError(snapshot.data?.message410 ?? 'İlan detayları getirilemedi.');
     }
 
-    final JobDetail job = snapshot.data!.data!.job;
-
-    if (!job.isActive) {
+    if (!job!.isActive) {
       return _buildInactiveJob();
     }
 
@@ -150,7 +210,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildJobDetail(JobDetail job) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: AppPaddings.pageVertical),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -189,7 +248,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
             child: _buildDebugInfo(job),
           ),
-          const SizedBox(height: 100), // for bottom nav bar spacing
+          const SizedBox(height: 20),
         ],
       ),
     );
@@ -205,21 +264,33 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             Expanded(
               child: Text(
                 job.jobTitle,
-                style: AppTextStyles.title.copyWith(fontSize: 24),
+                style: AppTextStyles.title.copyWith(fontSize: 22),
               ),
             ),
             const SizedBox(width: 8),
-            if (job.isHighlighted)
-              Chip(
-                label: const Text('Öne Çıkan'),
-                backgroundColor: Colors.amber.shade100,
-                labelStyle: TextStyle(color: Colors.amber.shade800, fontWeight: FontWeight.bold),
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
+            if (_isFavorite != null)
+              IconButton(
+                icon: Icon(_isFavorite! ? Icons.favorite : Icons.favorite_border),
+                color: _isFavorite! ? Colors.redAccent : AppColors.textLight,
+                tooltip: 'Favorilere Ekle',
+                onPressed: () async {
+                  await _toggleFavorite(job.jobID);
+                },
               ),
           ],
         ),
-        const SizedBox(height: 12),
+        if (job.isHighlighted)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 8),
+            child: Chip(
+              label: const Text('Öne Çıkan'),
+              backgroundColor: Colors.amber.shade100,
+              labelStyle: TextStyle(color: Colors.amber.shade800, fontWeight: FontWeight.bold),
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        const SizedBox(height: 8),
         Text(
           job.compName,
           style: AppTextStyles.company.copyWith(fontSize: 18, color: AppColors.textBody),
@@ -326,26 +397,29 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             offset: const Offset(0, -5),
           ),
         ],
-        border: Border(top: BorderSide(color: AppColors.cardBorder)),
+        border: Border(top: BorderSide(color: AppColors.cardBorder.withOpacity(0.5))),
       ),
-      child: ElevatedButton(
-        onPressed: _isApplied!
-            ? null
-            : () {
-                setState(() {
-                  _isApplied = true;
-                });
-                // TODO: API'ye başvuru isteği gönderilecek.
-              },
-        style: ElevatedButton.styleFrom(
-          minimumSize: const Size(double.infinity, 48),
-          backgroundColor: AppColors.primary,
-          disabledBackgroundColor: AppColors.textLight.withOpacity(0.5),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        child: Text(
-          _isApplied! ? 'Başvuruldu' : 'Hemen Başvur',
-          style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+      child: SafeArea(
+        top: false,
+        child: ElevatedButton(
+          onPressed: _isApplied!
+              ? null
+              : () {
+                  setState(() {
+                    _isApplied = true;
+                  });
+                  // TODO: API'ye başvuru isteği gönderilecek.
+                },
+          style: ElevatedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 48),
+            backgroundColor: AppColors.primary,
+            disabledBackgroundColor: AppColors.textLight.withOpacity(0.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: Text(
+            _isApplied! ? 'Başvuruldu' : 'Hemen Başvur',
+            style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
+          ),
         ),
       ),
     );

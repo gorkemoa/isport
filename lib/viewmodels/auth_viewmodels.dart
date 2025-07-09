@@ -84,6 +84,40 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
+  /// Kullanıcı kaydı yapar
+  Future<RegisterResponse> register(RegisterRequest request) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final response = await _authService.register(request);
+
+      if (response.success) {
+        // Başarılı kayıt, hata yok
+        _setAuthStatus(AuthStatus.unauthenticated); // Kayıt sonrası giriş yapılmamış state'e geç
+      } else {
+        // Hatalı kayıt
+        String errorMessage = 'Kayıt başarısız oldu.';
+        if (response.validationErrors != null && response.validationErrors!.isNotEmpty) {
+           // İlk validation hatasını göster
+           errorMessage = response.validationErrors!.values.first.toString();
+        } else if (response.successMessage != null && response.successMessage!.isNotEmpty) {
+          errorMessage = response.successMessage!;
+        }
+        _setError(errorMessage);
+        _setAuthStatus(AuthStatus.error);
+      }
+      _setLoading(false);
+      return response;
+
+    } catch (e) {
+      _setError('Kayıt yapılırken bir hata oluştu: $e');
+      _setAuthStatus(AuthStatus.error);
+      _setLoading(false);
+      return RegisterResponse(error: true, success: false, message410: e.toString());
+    }
+  }
+
   /// Kullanıcı çıkışı yapar
   Future<void> logout() async {
     _setLoading(true);

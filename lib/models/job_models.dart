@@ -87,6 +87,53 @@ class Job {
       distanceKM: json['distanceKM'] != null ? (json['distanceKM'] as num).toDouble() : null,
     );
   }
+
+  factory Job.empty() {
+    return Job(
+      compID: 0,
+      jobID: 0,
+      jobTitle: '',
+      jobDesc: '',
+      jobImage: '',
+      jobCity: '',
+      jobDistrict: '',
+      compName: '',
+      workType: '',
+      showDate: '',
+      isFavorite: false,
+      distanceKM: null,
+    );
+  }
+
+  Job copyWith({
+    int? compID,
+    int? jobID,
+    String? jobTitle,
+    String? jobDesc,
+    String? jobImage,
+    String? jobCity,
+    String? jobDistrict,
+    String? compName,
+    String? workType,
+    String? showDate,
+    bool? isFavorite,
+    double? distanceKM,
+  }) {
+    return Job(
+      compID: compID ?? this.compID,
+      jobID: jobID ?? this.jobID,
+      jobTitle: jobTitle ?? this.jobTitle,
+      jobDesc: jobDesc ?? this.jobDesc,
+      jobImage: jobImage ?? this.jobImage,
+      jobCity: jobCity ?? this.jobCity,
+      jobDistrict: jobDistrict ?? this.jobDistrict,
+      compName: compName ?? this.compName,
+      workType: workType ?? this.workType,
+      showDate: showDate ?? this.showDate,
+      isFavorite: isFavorite ?? this.isFavorite,
+      distanceKM: distanceKM ?? this.distanceKM,
+    );
+  }
 }
 
 /// İş ilanları listesi verisi

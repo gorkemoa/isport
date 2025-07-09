@@ -11,6 +11,8 @@ class JobService {
   static const String _baseUrl = 'https://api.rivorya.com/isport'; // AuthService ile aynı olmalı
   static const String _jobListEndpoint = '/service/user/company/jobListAll';
   static const String _jobDetailEndpointBase = '/service/user/company';
+  static const String _favoriteAddEndpoint = '/service/user/account/jobFavoriteAdd';
+  static const String _favoriteRemoveEndpoint = '/service/user/account/jobFavoriteRemove';
 
   /// İş ilanlarını getirir
   Future<JobListResponse> getJobList(JobListRequest request) async {
@@ -78,5 +80,109 @@ class JobService {
         message410: 'Ağ Hatası: $e',
       );
     }
+  }
+
+  /// İlanı favorilere ekler
+  Future<FavoriteResponse> addJobToFavorites({required String userToken, required int jobID}) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_favoriteAddEndpoint');
+      final headers = AuthService.getHeaders(userToken: userToken);
+      final body = jsonEncode({
+        'userToken': userToken,
+        'jobID': jobID,
+      });
+
+      logger.d('Favori Ekleme İsteği: $body');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Favori Ekleme Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return FavoriteResponse.fromJson(jsonData);
+      } else {
+        return FavoriteResponse(
+          error: true,
+          success: false,
+          message: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Favori eklenirken hata', error: e, stackTrace: s);
+      return FavoriteResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// İlanı favorilerden kaldırır
+  Future<FavoriteResponse> removeJobFromFavorites({required String userToken, required int jobID}) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_favoriteRemoveEndpoint');
+      final headers = AuthService.getHeaders(userToken: userToken);
+      final body = jsonEncode({
+        'userToken': userToken,
+        'jobID': jobID,
+      });
+
+      logger.d('Favori Kaldırma İsteği: $body');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Favori Kaldırma Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return FavoriteResponse.fromJson(jsonData);
+      } else {
+        return FavoriteResponse(
+          error: true,
+          success: false,
+          message: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Favori kaldırılırken hata', error: e, stackTrace: s);
+      return FavoriteResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
+      );
+    }
+  }
+}
+
+/// Favori ekleme/kaldırma API yanıtı için model
+class FavoriteResponse {
+  final bool error;
+  final bool success;
+  final String? message;
+  final String? gone410;
+
+  FavoriteResponse({
+    required this.error,
+    required this.success,
+    this.message,
+    this.gone410,
+  });
+
+  factory FavoriteResponse.fromJson(Map<String, dynamic> json) {
+    return FavoriteResponse(
+      error: json['error'] ?? false,
+      success: json['success'] ?? false,
+      message: json['data']?['message'],
+      gone410: json['410'],
+    );
   }
 } 
