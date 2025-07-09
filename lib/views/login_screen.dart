@@ -3,6 +3,7 @@ import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
 import 'register_screen.dart';
+import 'package:isport/views/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -130,8 +131,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
+
+                      // Şifremi Unuttum Butonu
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                             Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                            );
+                          },
+                          child: const Text(
+                            'Şifremi Unuttum',
+                            style: TextStyle(color: AppColors.primary),
+                          ),
+                        ),
+                      ),
                       
-                      const SizedBox(height: AppPaddings.pageVertical),
+                      const SizedBox(height: AppPaddings.card),
                       
                       // Giriş butonu
                       Consumer<AuthViewModel>(

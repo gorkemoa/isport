@@ -249,3 +249,122 @@ class RegisterResponse {
     );
   }
 }
+
+/// Şifremi unuttum isteği için model
+class ForgotPasswordRequest {
+  final String userEmail;
+
+  ForgotPasswordRequest({required this.userEmail});
+
+  Map<String, dynamic> toJson() {
+    return {'userEmail': userEmail};
+  }
+}
+
+/// Şifremi unuttum yanıtındaki 'data' alanı
+class ForgotPasswordData {
+  final String codeToken;
+
+  ForgotPasswordData({required this.codeToken});
+
+  factory ForgotPasswordData.fromJson(Map<String, dynamic> json) {
+    return ForgotPasswordData(
+      codeToken: json['codeToken'] ?? '',
+    );
+  }
+}
+
+/// Şifremi unuttum yanıtı için model
+class ForgotPasswordResponse {
+  final bool error;
+  final bool success;
+  final String? message;
+  final ForgotPasswordData? data;
+  final String? message410;
+
+  ForgotPasswordResponse({
+    required this.error,
+    required this.success,
+    this.message,
+    this.data,
+    this.message410,
+  });
+
+  factory ForgotPasswordResponse.fromJson(Map<String, dynamic> json) {
+    return ForgotPasswordResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      message: json['message'] ?? json['success_message'],
+      data: json['data'] != null ? ForgotPasswordData.fromJson(json['data']) : null,
+      message410: json['410'],
+    );
+  }
+}
+
+/// Kod doğrulama isteği için model
+class CheckCodeRequest {
+  final String code;
+  final String codeToken;
+
+  CheckCodeRequest({required this.code, required this.codeToken});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'code': code,
+      'codeToken': codeToken,
+    };
+  }
+}
+
+/// Şifre sıfırlama isteği için model
+class ResetPasswordRequest {
+  final String codeToken;
+  final String userPassword;
+
+  ResetPasswordRequest({required this.codeToken, required this.userPassword});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'codeToken': codeToken,
+      'userPassword': userPassword,
+    };
+  }
+}
+
+
+/// Genel amaçlı API yanıt modeli (CheckCode, ResetPassword vb. için)
+class GenericAuthResponse {
+  final bool error;
+  final bool success;
+  final String? message;
+  final String? message410;
+  final Map<String, dynamic>? validationErrors;
+
+
+  GenericAuthResponse({
+    required this.error,
+    required this.success,
+    this.message,
+    this.message410,
+    this.validationErrors,
+  });
+
+  factory GenericAuthResponse.fromJson(Map<String, dynamic> json) {
+     dynamic dataField = json['data'];
+    Map<String, dynamic>? validationData;
+
+    if (dataField is Map<String, dynamic>) {
+       if (!dataField.containsKey('userID') && !dataField.containsKey('codeToken')) {
+          validationData = dataField;
+       }
+    }
+
+    return GenericAuthResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      message: json['message'] ?? json['success_message'],
+      validationErrors: validationData,
+      message410: json['410'],
+    );
+  }
+}

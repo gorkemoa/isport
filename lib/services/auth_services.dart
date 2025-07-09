@@ -10,6 +10,9 @@ class AuthService {
   static const String _baseUrl = 'https://api.rivorya.com/isport';
   static const String _loginEndpoint = '/service/auth/login';
   static const String _registerEndpoint = '/service/auth/register';
+  static const String _forgotPasswordEndpoint = '/service/auth/forgotPassword';
+  static const String _checkCodeEndpoint = '/service/auth/code/checkCode';
+  static const String _resetPasswordEndpoint = '/service/auth/code/resetPassword';
   
   // Basic Auth sabitleri
   static const String _basicAuthUsername = 'Tr2BUhR2ICWHJN2nlvp9T5ycBoyMJD';
@@ -114,6 +117,75 @@ class AuthService {
         error: true,
         success: false,
         message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Şifre sıfırlama maili gönderir
+  Future<ForgotPasswordResponse> forgotPassword(ForgotPasswordRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_forgotPasswordEndpoint');
+      final headers = getHeaders();
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Şifremi Unuttum İsteği: $body');
+      final response = await http.post(url, headers: headers, body: body);
+      logger.d('Şifremi Unuttum Yanıtı: ${response.statusCode} - ${response.body}');
+
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return ForgotPasswordResponse.fromJson(jsonData);
+
+    } catch (e) {
+      return ForgotPasswordResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Doğrulama kodunu kontrol eder
+  Future<GenericAuthResponse> checkCode(CheckCodeRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_checkCodeEndpoint');
+      final headers = getHeaders();
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Kod Kontrol İsteği: $body');
+      final response = await http.post(url, headers: headers, body: body);
+      logger.d('Kod Kontrol Yanıtı: ${response.statusCode} - ${response.body}');
+
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return GenericAuthResponse.fromJson(jsonData);
+
+    } catch (e) {
+      return GenericAuthResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+    /// Yeni şifreyi belirler
+  Future<GenericAuthResponse> resetPassword(ResetPasswordRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_resetPasswordEndpoint');
+      final headers = getHeaders();
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Şifre Sıfırlama İsteği: $body');
+      final response = await http.post(url, headers: headers, body: body);
+      logger.d('Şifre Sıfırlama Yanıtı: ${response.statusCode} - ${response.body}');
+
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return GenericAuthResponse.fromJson(jsonData);
+
+    } catch (e) {
+      return GenericAuthResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
       );
     }
   }

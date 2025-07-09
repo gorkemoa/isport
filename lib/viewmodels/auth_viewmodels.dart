@@ -12,6 +12,7 @@ class AuthViewModel extends ChangeNotifier {
   User? _currentUser;
   String? _errorMessage;
   bool _isLoading = false;
+  String? _codeToken;
 
   // Public getter'lar
   AuthStatus get authStatus => _authStatus;
@@ -115,6 +116,83 @@ class AuthViewModel extends ChangeNotifier {
       _setAuthStatus(AuthStatus.error);
       _setLoading(false);
       return RegisterResponse(error: true, success: false, message410: e.toString());
+    }
+  }
+
+  /// Şifre sıfırlama maili gönderir. Başarılı olursa true döner.
+  Future<bool> forgotPassword(String email) async {
+    _setLoading(true);
+    _clearError();
+    try {
+      final request = ForgotPasswordRequest(userEmail: email);
+      final response = await _authService.forgotPassword(request);
+      if (response.success && response.data?.codeToken != null) {
+        _codeToken = response.data!.codeToken;
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.message ?? 'Şifre sıfırlama isteği gönderilemedi.');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Bir hata oluştu: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Doğrulama kodunu kontrol eder. Başarılı olursa true döner.
+  Future<bool> checkCode(String code) async {
+    if (_codeToken == null) {
+      _setError('Doğrulama anahtarı bulunamadı. Lütfen tekrar deneyin.');
+      return false;
+    }
+    _setLoading(true);
+    _clearError();
+    try {
+      final request = CheckCodeRequest(code: code, codeToken: _codeToken!);
+      final response = await _authService.checkCode(request);
+      if (response.success) {
+        // codeToken hala geçerli, bir sonraki adıma geçilebilir.
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.message ?? 'Kod doğrulanamadı.');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Bir hata oluştu: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
+  /// Yeni şifreyi ayarlar. Başarılı olursa true döner.
+  Future<bool> resetPassword(String password) async {
+    if (_codeToken == null) {
+      _setError('Doğrulama anahtarı bulunamadı. Lütfen tekrar deneyin.');
+      return false;
+    }
+     _setLoading(true);
+    _clearError();
+    try {
+      final request = ResetPasswordRequest(userPassword: password, codeToken: _codeToken!);
+      final response = await _authService.resetPassword(request);
+       if (response.success) {
+        _codeToken = null; // Token kullanıldı, temizle.
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(response.message ?? 'Şifre sıfırlanamadı.');
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Bir hata oluştu: $e');
+      _setLoading(false);
+      return false;
     }
   }
 
