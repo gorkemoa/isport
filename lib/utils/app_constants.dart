@@ -14,31 +14,31 @@ class AppColors {
 
 class AppTextStyles {
   static const TextStyle title = TextStyle(
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: FontWeight.bold,
     color: AppColors.textTitle,
   );
 
   static const TextStyle company = TextStyle(
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: FontWeight.w500,
     color: AppColors.textBody,
   );
 
   static const TextStyle location = TextStyle(
-    fontSize: 14,
+    fontSize: 13,
     color: AppColors.textLight,
   );
   
   static const TextStyle body = TextStyle(
-    fontSize: 14,
+    fontSize: 13,
     color: AppColors.textBody,
   );
 }
 
 class AppPaddings {
-  static const double pageHorizontal = 16.0;
-  static const double pageVertical = 20.0;
-  static const double card = 12.0;
-  static const double item = 8.0;
+  static const double pageHorizontal = 20.0;
+  static const double pageVertical = 24.0;
+  static const double card = 16.0;
+  static const double item = 12.0;
 } 

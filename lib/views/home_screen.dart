@@ -205,71 +205,33 @@ class JobCard extends StatelessWidget {
       },
       child: Container(
         margin: const EdgeInsets.symmetric(
-            horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.item),
+            horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.item / 2),
         padding: const EdgeInsets.all(AppPaddings.card),
         decoration: BoxDecoration(
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cardBorder),
+          border: Border.all(color: AppColors.cardBorder.withOpacity(0.8)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8.0),
-                    border: Border.all(color: AppColors.cardBorder.withOpacity(0.5))
-                  ),
-                  child: const Icon(
-                    Icons.business_center_outlined,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: AppPaddings.card),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        job.jobTitle,
-                        style: AppTextStyles.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        job.compName,
-                        style: AppTextStyles.company,
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    job.isFavorite ? Icons.favorite : Icons.favorite_border,
-                    color: job.isFavorite ? Colors.redAccent : AppColors.textLight,
-                  ),
-                  onPressed: () {
-                    // Favorilere ekleme/çıkarma fonksiyonu eklenebilir
-                  },
-                ),
-              ],
+            Text(
+              job.jobTitle,
+              style: AppTextStyles.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: AppPaddings.item / 2),
+            Text(
+              job.compName,
+              style: AppTextStyles.company,
             ),
             const SizedBox(height: AppPaddings.card),
-            Wrap(
-              spacing: AppPaddings.item,
-              runSpacing: AppPaddings.item,
+            Row(
               children: [
                 _buildIconText(
                     context, Icons.location_on_outlined, '${job.jobCity}, ${job.jobDistrict}'),
-                _buildIconText(
-                    context, Icons.work_outline, job.workType),
+                const Spacer(),
                 _buildIconText(
                     context, Icons.access_time_outlined, job.showDate),
               ],
@@ -284,12 +246,12 @@ class JobCard extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: AppColors.textLight),
-        const SizedBox(width: 4),
+        Icon(icon, size: 14, color: AppColors.textLight),
+        const SizedBox(width: 6),
         Flexible(
           child: Text(
             text,
-            style: AppTextStyles.body.copyWith(color: AppColors.textBody),
+            style: AppTextStyles.body.copyWith(color: AppColors.textLight),
           ),
         ),
       ],

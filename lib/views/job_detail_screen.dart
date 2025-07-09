@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 
 import '../models/job_detail_models.dart';
@@ -52,13 +53,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         final JobDetail? job = snapshot.data?.data?.job;
 
         return Scaffold(
+          backgroundColor: AppColors.background,
           appBar: AppBar(
-            title: const Text('İlan Detayı'),
+            title: Text(job?.jobTitle ?? 'İlan Detayı'),
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
             actions: job != null && (_isFavorite != null)
                 ? [
                     IconButton(
                       icon: Icon(_isFavorite! ? Icons.favorite : Icons.favorite_border),
-                      color: _isFavorite! ? Colors.red : null,
+                      color: _isFavorite! ? Colors.redAccent : Colors.white,
                       tooltip: 'Favorilere Ekle',
                       onPressed: () {
                         setState(() {
@@ -79,7 +83,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildBody(AsyncSnapshot<JobDetailResponse> snapshot) {
     if (snapshot.connectionState == ConnectionState.waiting) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (snapshot.hasError) {
@@ -108,7 +112,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           children: [
             const Icon(Icons.error_outline, color: Colors.red, size: 60),
             const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            Text(message, textAlign: TextAlign.center, style: AppTextStyles.body),
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: () {
@@ -116,7 +120,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   _jobDetailFuture = _fetchJobDetail();
                 });
               },
-              child: const Text('Yeniden Dene'),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Yeniden Dene', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -131,11 +136,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.visibility_off_outlined, size: 80, color: Colors.grey[400]),
+            Icon(Icons.visibility_off_outlined, size: 80, color: AppColors.textLight),
             const SizedBox(height: 16),
             const Text(
               'Bu ilan artık aktif değil.',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: AppTextStyles.title,
             ),
           ],
         ),
@@ -145,27 +150,46 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildJobDetail(JobDetail job) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(vertical: AppPaddings.pageVertical),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildJobHeader(job),
-          const SizedBox(height: 16),
-          _buildJobInfo(job),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 16),
-          _buildSectionTitle('İş Tanımı'),
-          const SizedBox(height: 8),
-          Text(job.jobDesc, style: Theme.of(context).textTheme.bodyMedium),
-          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildJobHeader(job),
+          ),
+          const SizedBox(height: AppPaddings.pageVertical),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildJobInfo(job),
+          ),
+          const SizedBox(height: AppPaddings.pageVertical),
+          const Divider(height: 1),
+          const SizedBox(height: AppPaddings.pageVertical),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildSectionTitle('İş Tanımı'),
+          ),
+          const SizedBox(height: AppPaddings.item),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: Text(job.jobDesc, style: AppTextStyles.body),
+          ),
+          const SizedBox(height: AppPaddings.pageVertical),
           if (job.benefits.isNotEmpty) ..._buildBenefitsSection(job),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 16),
-          _buildDatesSection(job),
-          const SizedBox(height: 24),
-          _buildDebugInfo(job),
+          const SizedBox(height: AppPaddings.pageVertical),
+          const Divider(height: 1),
+          const SizedBox(height: AppPaddings.pageVertical),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildDatesSection(job),
+          ),
+          const SizedBox(height: AppPaddings.pageVertical),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildDebugInfo(job),
+          ),
+          const SizedBox(height: 100), // for bottom nav bar spacing
         ],
       ),
     );
@@ -181,7 +205,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             Expanded(
               child: Text(
                 job.jobTitle,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                style: AppTextStyles.title.copyWith(fontSize: 24),
               ),
             ),
             const SizedBox(width: 8),
@@ -195,13 +219,17 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
           job.compName,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[700]),
+          style: AppTextStyles.company.copyWith(fontSize: 18, color: AppColors.textBody),
         ),
-        const SizedBox(height: 8),
-        Chip(label: Text(job.catName)),
+        const SizedBox(height: 12),
+        Chip(
+          label: Text(job.catName),
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          labelStyle: AppTextStyles.body.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -210,11 +238,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildIconText(Icons.location_on, '${job.cityName}, ${job.districtName}'),
-        const SizedBox(height: 8),
+        _buildIconText(Icons.location_on_outlined, '${job.cityName}, ${job.districtName}'),
+        const SizedBox(height: AppPaddings.card),
         _buildIconText(Icons.work_outline, job.workType),
-        const SizedBox(height: 8),
-        _buildIconText(Icons.monetization_on, '${job.salaryMin} - ${job.salaryMax} ${job.salaryType}'),
+        const SizedBox(height: AppPaddings.card),
+        _buildIconText(Icons.monetization_on_outlined, '${job.salaryMin} - ${job.salaryMax} ${job.salaryType}'),
       ],
     );
   }
@@ -222,24 +250,31 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+      style: AppTextStyles.title,
     );
   }
 
   List<Widget> _buildBenefitsSection(JobDetail job) {
     return [
-      _buildSectionTitle('Yan Haklar'),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 4,
-        children: job.benefits
-            .map((benefit) => Chip(
-                  label: Text(benefit),
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  visualDensity: VisualDensity.compact,
-                ))
-            .toList(),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+        child: _buildSectionTitle('Yan Haklar'),
+      ),
+      const SizedBox(height: AppPaddings.item),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: job.benefits
+              .map((benefit) => Chip(
+                    label: Text(benefit),
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    labelStyle: AppTextStyles.body.copyWith(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  ))
+              .toList(),
+        ),
       ),
     ];
   }
@@ -249,9 +284,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('İlan Bilgileri'),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppPaddings.card),
         _buildIconText(Icons.calendar_today_outlined, 'Yayın Tarihi: ${job.showDate}'),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppPaddings.card),
         _buildIconText(Icons.create_outlined, 'Oluşturma Tarihi: ${job.createDate}'),
       ],
     );
@@ -260,19 +295,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget _buildDebugInfo(JobDetail job) {
     return Text(
       'JobID: ${job.jobID} / CompID: ${job.compID}',
-      style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+      style: AppTextStyles.body.copyWith(color: AppColors.textLight.withOpacity(0.7)),
     );
   }
 
   Widget _buildIconText(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
-        const SizedBox(width: 8),
+        Icon(icon, size: 20, color: AppColors.primary),
+        const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: AppTextStyles.body,
           ),
         ),
       ],
@@ -280,8 +315,19 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildApplyButton(JobDetail job) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return Container(
+      padding: const EdgeInsets.all(AppPaddings.pageHorizontal),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+        border: Border(top: BorderSide(color: AppColors.cardBorder)),
+      ),
       child: ElevatedButton(
         onPressed: _isApplied!
             ? null
@@ -293,8 +339,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               },
         style: ElevatedButton.styleFrom(
           minimumSize: const Size(double.infinity, 48),
-          backgroundColor: Theme.of(context).primaryColor,
-          disabledBackgroundColor: Colors.grey.shade300,
+          backgroundColor: AppColors.primary,
+          disabledBackgroundColor: AppColors.textLight.withOpacity(0.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: Text(
           _isApplied! ? 'Başvuruldu' : 'Hemen Başvur',

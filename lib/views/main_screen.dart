@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isport/utils/app_constants.dart';
 
 import 'applications_screen.dart';
 import 'home_screen.dart';
@@ -34,23 +35,29 @@ class _MainScreenState extends State<MainScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed, // 3 veya daha fazla sekme için gerekli
+        backgroundColor: AppColors.cardBackground,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
             label: 'Ana Sayfa',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.work_outline),
+            activeIcon: Icon(Icons.work),
             label: 'Başvurular',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
             label: 'Profilim',
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Theme.of(context).primaryColor,
+        selectedItemColor: AppColors.primary,
+        unselectedItemColor: AppColors.textLight,
         onTap: _onItemTapped,
+        showUnselectedLabels: true,
       ),
     );
   }

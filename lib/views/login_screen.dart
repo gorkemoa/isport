@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
 
@@ -25,51 +26,51 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
                 
                 // Logo veya başlık
                 Container(
-                  width: 120,
-                  height: 120,
+                  width: 100,
+                  height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(60),
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(50),
                   ),
                   child: const Icon(
-                    Icons.sports_soccer,
+                    Icons.work_history_outlined,
                     color: Colors.white,
-                    size: 60,
+                    size: 50,
                   ),
                 ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: AppPaddings.pageVertical),
                 
                 Text(
                   'iSport',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue[800],
+                    color: AppColors.primary,
                   ),
                 ),
                 
-                const SizedBox(height: 8),
+                const SizedBox(height: AppPaddings.item),
                 
                 Text(
-                  'Hoş Geldiniz',
+                  'Kariyer Fırsatları Burada',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
+                    color: AppColors.textLight,
                   ),
                 ),
                 
-                const SizedBox(height: 48),
+                const SizedBox(height: 50),
                 
                 // Giriş formu
                 Form(
@@ -80,15 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
+                        decoration: _buildInputDecoration(
                           labelText: 'E-posta',
                           hintText: 'ornek@email.com',
-                          prefixIcon: const Icon(Icons.email),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
+                          icon: Icons.email_outlined,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -101,21 +97,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppPaddings.card),
                       
                       // Password field
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
-                        decoration: InputDecoration(
+                        decoration: _buildInputDecoration(
                           labelText: 'Şifre',
                           hintText: 'Şifrenizi girin',
-                          prefixIcon: const Icon(Icons.lock),
+                          icon: Icons.lock_outline,
+                        ).copyWith(
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: AppColors.textLight,
                             ),
                             onPressed: () {
                               setState(() {
@@ -123,11 +121,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               });
                             },
                           ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -137,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       
-                      const SizedBox(height: 24),
+                      const SizedBox(height: AppPaddings.pageVertical),
                       
                       // Giriş butonu
                       Consumer<AuthViewModel>(
@@ -150,15 +143,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ? null
                                   : () => _handleLogin(authViewModel),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
+                                disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
                               ),
                               child: authViewModel.isLoading
                                   ? const CircularProgressIndicator(
-                                      color: Colors.white,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     )
                                   : const Text(
                                       'Giriş Yap',
@@ -172,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppPaddings.card),
                       
                       // Hata mesajı
                       Consumer<AuthViewModel>(
@@ -242,11 +236,39 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  InputDecoration _buildInputDecoration({
+    required String labelText,
+    required String hintText,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: labelText,
+      hintText: hintText,
+      prefixIcon: Icon(icon, color: AppColors.textLight),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.cardBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
+      filled: true,
+      fillColor: AppColors.cardBackground,
+      labelStyle: const TextStyle(color: AppColors.textLight),
+      hintStyle: const TextStyle(color: AppColors.textLight),
+    );
+  }
+
   void _handleLogin(AuthViewModel authViewModel) async {
     // Hata mesajını temizle
     authViewModel.clearError();
     
-    if (_formKey.currentState!.validate()) {
+    if (_formKey.currentState?.validate() ?? false) {
       final success = await authViewModel.login(
         _emailController.text.trim(),
         _passwordController.text,
