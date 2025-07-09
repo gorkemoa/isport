@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -164,6 +165,33 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
+                      ),
+                      
+                      const SizedBox(height: AppPaddings.card),
+                      
+                      // Kayıt ol butonu
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          );
+                        },
+                        child: RichText(
+                          text: const TextSpan(
+                            style: TextStyle(color: AppColors.textLight),
+                            children: [
+                              TextSpan(text: 'Hesabın yok mu? '),
+                              TextSpan(
+                                text: 'Kayıt Ol',
+                                style: TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                       
                       const SizedBox(height: AppPaddings.card),
