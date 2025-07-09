@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
 import '../viewmodels/job_viewmodel.dart';
@@ -42,9 +43,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('İş İlanları'),
-        backgroundColor: Colors.blue[800],
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -62,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Consumer<JobViewModel>(
         builder: (context, jobViewModel, child) {
           return RefreshIndicator(
+            color: AppColors.primary,
             onRefresh: () => jobViewModel.fetchJobs(isRefresh: true),
             child: _buildJobList(context, jobViewModel),
           );
@@ -75,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final jobs = jobViewModel.jobs;
 
     if (status == JobStatus.loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
     if (status == JobStatus.error) {
@@ -99,13 +102,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: AppPaddings.item),
       controller: _scrollController,
       itemCount: jobs.length + (jobViewModel.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == jobs.length) {
           return const Padding(
             padding: EdgeInsets.all(16.0),
-            child: Center(child: CircularProgressIndicator()),
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
         }
         return JobCard(job: jobs[index]);
@@ -199,71 +203,78 @@ class JobCard extends StatelessWidget {
           ),
         );
       },
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 4,
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
+      child: Container(
+        margin: const EdgeInsets.symmetric(
+            horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.item),
+        padding: const EdgeInsets.all(AppPaddings.card),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
                     borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
-                      job.jobImage,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(Icons.business, size: 60, color: Colors.grey);
-                      },
-                    ),
+                    border: Border.all(color: AppColors.cardBorder.withOpacity(0.5))
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          job.jobTitle,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          job.compName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey[700]),
-                        ),
-                      ],
-                    ),
+                  child: const Icon(
+                    Icons.business_center_outlined,
+                    color: AppColors.primary,
+                    size: 28,
                   ),
-                  IconButton(
-                    icon: Icon(
-                      job.isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: job.isFavorite ? Colors.red : Colors.grey,
-                    ),
-                    onPressed: () {
-                      // Favorilere ekleme/çıkarma fonksiyonu eklenebilir
-                    },
+                ),
+                const SizedBox(width: AppPaddings.card),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.jobTitle,
+                        style: AppTextStyles.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        job.compName,
+                        style: AppTextStyles.company,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildIconText(context, Icons.location_city, '${job.jobCity}, ${job.jobDistrict}'),
-                  _buildIconText(context, Icons.work_outline, job.workType),
-                  _buildIconText(context, Icons.access_time, job.showDate),
-                ],
-              ),
-            ],
-          ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    job.isFavorite ? Icons.favorite : Icons.favorite_border,
+                    color: job.isFavorite ? Colors.redAccent : AppColors.textLight,
+                  ),
+                  onPressed: () {
+                    // Favorilere ekleme/çıkarma fonksiyonu eklenebilir
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: AppPaddings.card),
+            Wrap(
+              spacing: AppPaddings.item,
+              runSpacing: AppPaddings.item,
+              children: [
+                _buildIconText(
+                    context, Icons.location_on_outlined, '${job.jobCity}, ${job.jobDistrict}'),
+                _buildIconText(
+                    context, Icons.work_outline, job.workType),
+                _buildIconText(
+                    context, Icons.access_time_outlined, job.showDate),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -271,12 +282,15 @@ class JobCard extends StatelessWidget {
 
   Widget _buildIconText(BuildContext context, IconData icon, String text) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 16, color: Colors.grey[600]),
+        Icon(icon, size: 16, color: AppColors.textLight),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.grey[800]),
+        Flexible(
+          child: Text(
+            text,
+            style: AppTextStyles.body.copyWith(color: AppColors.textBody),
+          ),
         ),
       ],
     );
