@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 
 import '../models/user_model.dart';
@@ -14,8 +15,11 @@ class ProfileScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ProfileViewModel(),
       child: Scaffold(
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           title: const Text('Profilim'),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
         ),
         body: Consumer<ProfileViewModel>(
           builder: (context, viewModel, child) {
@@ -31,7 +35,7 @@ class ProfileScreen extends StatelessWidget {
             }
 
             if (viewModel.isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator(color: AppColors.primary));
             }
 
             if (viewModel.errorMessage != null) {
@@ -53,16 +57,27 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildError(BuildContext context, String message, VoidCallback onRetry) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppPaddings.pageHorizontal),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, color: Colors.red, size: 60),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppPaddings.card),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body.copyWith(fontSize: 16),
+            ),
+            const SizedBox(height: AppPaddings.item),
             ElevatedButton(
               onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: const Text('Yeniden Dene'),
             ),
           ],
@@ -74,32 +89,50 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileView(BuildContext context, UserModel user, ProfileViewModel viewModel) {
     return RefreshIndicator(
       onRefresh: () => viewModel.fetchUser(),
+      color: AppColors.primary,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(vertical: AppPaddings.pageVertical),
         children: [
-          _buildProfileHeader(context, user),
-          const SizedBox(height: 24),
-          _buildSectionTitle(context, 'Kişisel Bilgiler'),
-          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildProfileHeader(context, user),
+          ),
+          const SizedBox(height: AppPaddings.pageVertical * 1.5),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildSectionTitle(context, 'Kişisel Bilgiler'),
+          ),
+          const SizedBox(height: AppPaddings.item),
           _buildInfoTile(Icons.person_outline, 'Kullanıcı Adı', user.username),
           _buildInfoTile(Icons.email_outlined, 'E-posta', user.userEmail),
           _buildInfoTile(Icons.phone_outlined, 'Telefon', user.userPhone),
           _buildInfoTile(Icons.cake_outlined, 'Doğum Günü', user.userBirthday),
           _buildInfoTile(Icons.wc_outlined, 'Cinsiyet', user.userGender),
-          const SizedBox(height: 24),
-          _buildSectionTitle(context, 'Hesap Bilgileri'),
-          const Divider(),
+          const SizedBox(height: AppPaddings.pageVertical * 1.5),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: _buildSectionTitle(context, 'Hesap Bilgileri'),
+          ),
+          const SizedBox(height: AppPaddings.item),
           _buildInfoTile(Icons.star_border_outlined, 'Rank', user.userRank),
           _buildInfoTile(Icons.verified_user_outlined, 'Durum', user.userStatus),
           _buildInfoTile(Icons.check_circle_outline, 'Onaylı Hesap', user.isApproved ? 'Evet' : 'Hayır'),
-           _buildInfoTile(Icons.business_center_outlined, 'Şirket Hesabı', user.isComp ? 'Evet' : 'Hayır'),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () => _showLogoutDialog(context, viewModel),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade400,
+          _buildInfoTile(Icons.business_center_outlined, 'Şirket Hesabı', user.isComp ? 'Evet' : 'Hayır'),
+          const SizedBox(height: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal),
+            child: ElevatedButton(
+              onPressed: () => _showLogoutDialog(context, viewModel),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade400,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Çıkış Yap', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
-            child: const Text('Çıkış Yap', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -111,19 +144,22 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('Çıkış Yap'),
+          titleTextStyle: AppTextStyles.title,
           content: const Text('Hesabınızdan çıkmak istediğinizden emin misiniz?'),
+          contentTextStyle: AppTextStyles.body,
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('İptal'),
+              child: Text('İptal', style: AppTextStyles.body.copyWith(color: AppColors.textLight)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 viewModel.logout();
               },
-              child: const Text('Çıkış Yap', style: TextStyle(color: Colors.red)),
+              child: Text('Çıkış Yap', style: AppTextStyles.body.copyWith(color: Colors.red.shade600, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -136,17 +172,18 @@ class ProfileScreen extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 50,
+          backgroundColor: AppColors.cardBorder,
           backgroundImage: user.profilePhoto.isNotEmpty
               ? NetworkImage(user.profilePhoto)
               : null,
           child: user.profilePhoto.isEmpty
-              ? const Icon(Icons.person, size: 50)
+              ? Icon(Icons.person_outline, size: 50, color: AppColors.textLight.withOpacity(0.8))
               : null,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppPaddings.card),
         Text(
           user.userFullname,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+          style: AppTextStyles.title.copyWith(fontSize: 22),
         ),
       ],
     );
@@ -155,15 +192,34 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
+      style: AppTextStyles.title.copyWith(color: AppColors.primary, fontSize: 18),
     );
   }
 
   Widget _buildInfoTile(IconData icon, String title, String subtitle) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.grey.shade600),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 16, color: Colors.grey.shade800)),
+    return Padding(
+      padding: EdgeInsets.symmetric(
+          horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.item),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.textLight, size: 20),
+          const SizedBox(width: AppPaddings.card),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AppTextStyles.body.copyWith(color: AppColors.textLight)),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.company.copyWith(fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 } 
