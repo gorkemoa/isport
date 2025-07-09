@@ -215,17 +215,33 @@ class JobCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              job.jobTitle,
-              style: AppTextStyles.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: AppPaddings.item / 2),
-            Text(
+            Row(
+              children: [
+                Image.network(
+                  job.jobImage,
+                  width: 30,
+                  height: 30,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    job.jobTitle,
+                    style: AppTextStyles.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
               job.compName,
               style: AppTextStyles.company,
             ),
+              ],
+            ),
+            const SizedBox(height: AppPaddings.item / 2),
+           Text(
+            job.jobDesc,
+            style: AppTextStyles.body,
+           ),
             const SizedBox(height: AppPaddings.card),
             Row(
               children: [
