@@ -189,4 +189,8 @@ class AuthViewModel extends ChangeNotifier {
   Future<String?> getToken() async {
     return await _authService.loadToken();
   }
+
+  Future<bool> isLoggedIn() async {
+    return await _authService.isLoggedIn();
+  }
 }
