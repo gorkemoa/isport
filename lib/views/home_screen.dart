@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/job_viewmodel.dart';
+import '../viewmodels/auth_viewmodels.dart';
 import '../models/job_models.dart';
 import 'job_detail_screen.dart';
 
@@ -43,29 +44,123 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(
-          'İş İlanları',
-          style: AppTextStyles.title.copyWith(color: AppColors.textTitle),
-        ),
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        // Kullanıcı bilgileri ve çıkış yapma eylemleri, genellikle bir
-        // BottomNavigationBar aracılığıyla erişilen özel bir profil ekranına taşınmalıdır.
-      ),
-      body: Consumer<JobViewModel>(
-        builder: (context, jobViewModel, child) {
+      body: Consumer2<JobViewModel, AuthViewModel>(
+        builder: (context, jobViewModel, authViewModel, child) {
           return RefreshIndicator(
             color: AppColors.primary,
             onRefresh: () => jobViewModel.fetchJobs(isRefresh: true),
-            child: _buildJobList(context, jobViewModel),
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                // Modern App Bar with Welcome Message
+                SliverAppBar(
+                  expandedHeight: 200,
+                  floating: false,
+                  pinned: true,
+                  backgroundColor: AppColors.primary,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.primary, Color(0xFFF9D71C)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppPaddings.pageHorizontal),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Merhaba 👋',
+                                          style: AppTextStyles.subtitle.copyWith(
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Hayalindeki işi bul',
+                                          style: AppTextStyles.title.copyWith(
+                                            color: Colors.black,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.notifications_outlined,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              // Search Bar
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                    hintText: 'İş ara...',
+                                    hintStyle: TextStyle(color: Colors.grey[500]),
+                                    prefixIcon: Icon(Icons.search, color: Colors.grey[600]),
+                                    suffixIcon: Icon(Icons.tune, color: Colors.grey[600]),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 16,
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    // TODO: Implement search
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                // Job List
+                SliverToBoxAdapter(
+                  child: _buildJobListContent(context, jobViewModel),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildJobList(BuildContext context, JobViewModel jobViewModel) {
+  Widget _buildJobListContent(BuildContext context, JobViewModel jobViewModel) {
     final status = jobViewModel.status;
     final jobs = jobViewModel.jobs;
 
@@ -93,19 +188,49 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Center(child: Text('Gösterilecek ilan bulunamadı.'));
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(AppPaddings.pageHorizontal / 2),
-      controller: _scrollController,
-      itemCount: jobs.length + (jobViewModel.hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == jobs.length) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
-          );
-        }
-        return JobCard(job: jobs[index]);
-      },
+      child: Column(
+        children: [
+          // Jobs List Header
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Önerilen İşler',
+                  style: AppTextStyles.title.copyWith(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Tümünü görüntüle
+                  },
+                  child: const Text('Tümünü Gör'),
+                ),
+              ],
+            ),
+          ),
+          // Jobs List
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: jobs.length + (jobViewModel.hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == jobs.length) {
+                return const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                );
+              }
+              return JobCard(job: jobs[index]);
+            },
+          ),
+        ],
+      ),
     );
   }
 }

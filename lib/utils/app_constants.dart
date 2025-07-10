@@ -34,6 +34,17 @@ class AppTextStyles {
     fontSize: 13,
     color: AppColors.textBody,
   );
+
+  static const TextStyle subtitle = TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textTitle,
+  );
+
+  static const TextStyle caption = TextStyle(
+    fontSize: 12,
+    color: AppColors.textLight,
+  );
 }
 
 class AppPaddings {
@@ -41,4 +52,5 @@ class AppPaddings {
   static const double pageVertical = 24.0;
   static const double card = 16.0;
   static const double item = 12.0;
+  static const double section = 24.0;
 } 

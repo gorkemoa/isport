@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/job_models.dart';
 import '../models/job_detail_models.dart';
+import '../models/job_models.dart';
+import '../models/company_job_models.dart';
+import '../models/company_applications_models.dart';
 import 'auth_services.dart';
+export '../models/job_detail_models.dart' show ApplyJobRequest;
 import 'logger_service.dart';
 
 /// İş ilanları ile ilgili servisler
@@ -14,6 +17,10 @@ class JobService {
   static const String _favoriteAddEndpoint = '/service/user/account/jobFavoriteAdd';
   static const String _favoriteRemoveEndpoint = '/service/user/account/jobFavoriteRemove';
   static const String _jobApplyEndpoint = '/service/user/account/jobApply';
+  static const String _companyJobsEndpoint = '/service/user/company';
+  static const String _companyApplicationsEndpoint = '/service/user/company';
+  static const String _favoriteApplicantsEndpoint = '/service/user/company';
+  static const String _favoriteApplicantToggleEndpoint = '/service/user/company/favoriteApplicant';
 
   /// İş ilanlarını getirir
   Future<JobListResponse> getJobList(JobListRequest request) async {
@@ -189,6 +196,147 @@ class JobService {
         error: true,
         success: false,
         successMessage: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Şirket iş ilanlarını getirir
+  Future<CompanyJobsResponse> getCompanyJobs({required int companyId, String? userToken}) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_companyJobsEndpoint/$companyId/companyJobList');
+      final headers = AuthService.getHeaders(userToken: userToken);
+
+      logger.d('Şirket İlanları İsteği: $url');
+
+      final response = await http.get(url, headers: headers);
+
+      logger.d('Şirket İlanları Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return CompanyJobsResponse.fromJson(jsonData);
+      } else {
+        return CompanyJobsResponse(
+          error: true,
+          success: false,
+          message410: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Şirket ilanları getirilirken hata', error: e, stackTrace: s);
+      return CompanyJobsResponse(
+        error: true,
+        success: false,
+        message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Şirket başvurularını getirir
+  Future<CompanyApplicationsResponse> getCompanyApplications({
+    required int companyId, 
+    String? userToken,
+    int? jobID,
+  }) async {
+    try {
+      final queryParams = jobID != null ? '?jobID=$jobID' : '';
+      final url = Uri.parse('$_baseUrl$_companyApplicationsEndpoint/$companyId/jobApplications$queryParams');
+      final headers = AuthService.getHeaders(userToken: userToken);
+
+      logger.d('Şirket Başvuruları İsteği: $url');
+
+      final response = await http.get(url, headers: headers);
+
+      logger.d('Şirket Başvuruları Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return CompanyApplicationsResponse.fromJson(jsonData);
+      } else {
+        return CompanyApplicationsResponse(
+          error: true,
+          success: false,
+          message410: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Şirket başvuruları getirilirken hata', error: e, stackTrace: s);
+      return CompanyApplicationsResponse(
+        error: true,
+        success: false,
+        message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Favori adayları getirir
+  Future<FavoriteApplicantsResponse> getFavoriteApplicants({
+    required int companyId,
+    String? userToken,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_favoriteApplicantsEndpoint/$companyId/favoriteApplicants');
+      final headers = AuthService.getHeaders(userToken: userToken);
+
+      logger.d('Favori Adaylar İsteği: $url');
+
+      final response = await http.get(url, headers: headers);
+
+      logger.d('Favori Adaylar Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return FavoriteApplicantsResponse.fromJson(jsonData);
+      } else {
+        return FavoriteApplicantsResponse(
+          error: true,
+          success: false,
+          message410: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Favori adaylar getirilirken hata', error: e, stackTrace: s);
+      return FavoriteApplicantsResponse(
+        error: true,
+        success: false,
+        message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Favori aday ekleme/silme toggle
+  Future<FavoriteApplicantResponse> toggleFavoriteApplicant(FavoriteApplicantRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_favoriteApplicantToggleEndpoint');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Favori Aday Toggle İsteği: $body');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Favori Aday Toggle Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return FavoriteApplicantResponse.fromJson(jsonData);
+      } else {
+        return FavoriteApplicantResponse(
+          error: true,
+          success: false,
+          message410: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Favori aday toggle işleminde hata', error: e, stackTrace: s);
+      return FavoriteApplicantResponse(
+        error: true,
+        success: false,
+        message410: 'Ağ Hatası: $e',
       );
     }
   }

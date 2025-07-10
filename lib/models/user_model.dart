@@ -19,7 +19,7 @@ class UserModel {
   final String profilePhoto;
   final bool isApproved;
   final bool isComp;
-  final List<dynamic> company; // Tipini bilmiyoruz, simdilik dynamic kalabilir.
+  final CompanyModel? company;
 
   UserModel({
     required this.userID,
@@ -41,7 +41,7 @@ class UserModel {
     required this.profilePhoto,
     required this.isApproved,
     required this.isComp,
-    required this.company,
+    this.company,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -65,10 +65,52 @@ class UserModel {
       profilePhoto: json['profilePhoto'] ?? '',
       isApproved: json['isApproved'] ?? false,
       isComp: json['isComp'] ?? false,
-      company: json['company'] ?? [],
+      company: json['isComp'] == true && json['company'] is Map<String, dynamic>
+          ? CompanyModel.fromJson(json['company'])
+          : null,
     );
   }
 }
+
+/// Kurumsal kullanıcı verilerini temsil eden model.
+class CompanyModel {
+  final String compName;
+  final String compDesc;
+  final String compAddress;
+  final String compCity;
+  final int compCityNo;
+  final String compDistrict;
+  final int compDistrictNo;
+  final String compTaxNumber;
+  final String compTaxPlace;
+
+  CompanyModel({
+    required this.compName,
+    required this.compDesc,
+    required this.compAddress,
+    required this.compCity,
+    required this.compCityNo,
+    required this.compDistrict,
+    required this.compDistrictNo,
+    required this.compTaxNumber,
+    required this.compTaxPlace,
+  });
+
+  factory CompanyModel.fromJson(Map<String, dynamic> json) {
+    return CompanyModel(
+      compName: json['compName'] ?? '',
+      compDesc: json['compDesc'] ?? '',
+      compAddress: json['compAddress'] ?? '',
+      compCity: json['compCity'] ?? '',
+      compCityNo: json['compCityNo'] ?? 0,
+      compDistrict: json['compDistrict'] ?? '',
+      compDistrictNo: json['compDistrictNo'] ?? 0,
+      compTaxNumber: json['compTaxNumber'] ?? '',
+      compTaxPlace: json['compTaxPlace'] ?? '',
+    );
+  }
+}
+
 
 /// API'den gelen 'data' alanını temsil eden sınıf.
 class UserData {
@@ -77,9 +119,23 @@ class UserData {
   UserData({required this.user});
 
   factory UserData.fromJson(Map<String, dynamic> json) {
-    return UserData(
-      user: UserModel.fromJson(json['user'] ?? {}),
-    );
+    // API'den gelen 'user' alanı bir liste mi yoksa doğrudan bir map mi kontrol edelim.
+    final userJson = json['user'];
+    if (userJson is List && userJson.isNotEmpty) {
+      // Eğer bir liste ise ve boş değilse, ilk elemanı al.
+      return UserData(
+        user: UserModel.fromJson(userJson.first as Map<String, dynamic>),
+      );
+    } else if (userJson is Map<String, dynamic>) {
+      // Eğer doğrudan bir map ise, onu kullan.
+      return UserData(
+        user: UserModel.fromJson(userJson),
+      );
+    } else {
+      // Beklenmedik bir durum veya boş veri için hata fırlat veya varsayılan bir değer ata.
+      // Bu örnekte, boş bir UserModel oluşturuyoruz.
+      return UserData(user: UserModel.fromJson({}));
+    }
   }
 }
 

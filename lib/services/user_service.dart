@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../models/user_model.dart';
 import '../models/auth_models.dart';
+import '../models/company_detail_model.dart';
 import 'auth_services.dart';
 import 'logger_service.dart';
 
@@ -14,6 +15,7 @@ class UserService {
   static const String _userEndpoint = '/service/user/id';
   static const String _updateUserEndpoint = '/service/user/update/account';
   static const String _updatePasswordEndpoint = '/service/user/update/password';
+  static const String _companyDetailEndpoint = '/service/user/company/'; // {id}/companyDetail
 
   /// Kullanıcı bilgilerini getirir
   Future<UserResponse> getUser({required String? userToken}) async {
@@ -84,6 +86,34 @@ class UserService {
         error: true,
         success: false,
         message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Şirket detaylarını ve ilanlarını getirir
+  Future<CompanyDetailResponse> getCompanyDetail({required int companyId}) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_companyDetailEndpoint$companyId/companyDetail');
+      final headers = AuthService.getHeaders(); // Token gerektirmeyebilir, header'ı boş bırakabiliriz
+      
+      logger.d('Şirket Detay İsteği: $url');
+
+      final response = await http.get(
+        url,
+        headers: headers,
+      );
+
+      logger.d('Şirket Detay Yanıtı: ${response.statusCode} - ${response.body}');
+      
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return CompanyDetailResponse.fromJson(jsonData);
+
+    } catch (e, s) {
+      logger.e('Şirket detayı getirilirken hata', error: e, stackTrace: s);
+      return CompanyDetailResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
       );
     }
   }

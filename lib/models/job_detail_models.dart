@@ -19,6 +19,7 @@ class JobDetail {
   final bool isApplied;
   final bool isFavorite;
   final List<String> benefits;
+  final String profilePhoto; // Eksik alan eklendi
 
   JobDetail({
     required this.jobID,
@@ -40,6 +41,7 @@ class JobDetail {
     required this.isApplied,
     required this.isFavorite,
     required this.benefits,
+    required this.profilePhoto, // Constructor'a eklendi
   });
 
   factory JobDetail.fromJson(Map<String, dynamic> json) {
@@ -63,6 +65,7 @@ class JobDetail {
       isApplied: json['isApplied'] ?? false,
       isFavorite: json['isFavorite'] ?? false,
       benefits: json['benefits'] != null ? List<String>.from(json['benefits']) : <String>[],
+      profilePhoto: json['profilePhoto'] ?? '', // fromJson'a eklendi
     );
   }
 }

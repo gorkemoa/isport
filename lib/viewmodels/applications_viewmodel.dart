@@ -68,7 +68,9 @@ class ApplicationsViewModel extends ChangeNotifier {
           profilePhoto: '',
           isApproved: true,
           isComp: userData.isComp,
-          company: [],
+          company: CompanyModel(
+            compName: '', compDesc: '', compAddress: '', compCity: '', compCityNo: 0, compDistrict: '', compDistrictNo: 0, compTaxNumber: '', compTaxPlace: '',
+          ),
         );
         
         // Her iki veri setini de yükle

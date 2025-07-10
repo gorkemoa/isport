@@ -85,10 +85,26 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     _buildInfoTile(icon: Icons.email_outlined, title: 'E-posta', subtitle: user.userEmail),
                     _buildInfoTile(icon: Icons.phone_outlined, title: 'Telefon', subtitle: user.userPhone),
-                    _buildInfoTile(icon: Icons.cake_outlined, title: 'Doğum Günü', subtitle: user.userBirthday),
-                    _buildInfoTile(icon: Icons.person_outline, title: 'Cinsiyet', subtitle: user.userGender),
+                    if (user.userBirthday.isNotEmpty)
+                      _buildInfoTile(icon: Icons.cake_outlined, title: 'Doğum Günü', subtitle: user.userBirthday),
+                    if (user.userGender.isNotEmpty && user.userGender != 'Belirtilmemiş')
+                      _buildInfoTile(icon: Icons.person_outline, title: 'Cinsiyet', subtitle: user.userGender),
                   ],
                 ),
+                if (user.isComp && user.company != null) ...[
+                  const SizedBox(height: AppPaddings.pageVertical),
+                  _buildInfoCard(
+                    title: 'Kurumsal Bilgiler',
+                    children: [
+                      _buildInfoTile(icon: Icons.business_outlined, title: 'Şirket Adı', subtitle: user.company!.compName),
+                      _buildInfoTile(icon: Icons.location_on_outlined, title: 'Adres', subtitle: '${user.company!.compDistrict} / ${user.company!.compCity}'),
+                      if (user.company!.compAddress.isNotEmpty)
+                        _buildInfoTile(icon: Icons.map_outlined, title: 'Detaylı Adres', subtitle: user.company!.compAddress),
+                       if (user.company!.compTaxNumber.isNotEmpty)
+                        _buildInfoTile(icon: Icons.receipt_long_outlined, title: 'Vergi Numarası', subtitle: user.company!.compTaxNumber),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: AppPaddings.pageVertical),
                  _buildInfoCard(
                   title: 'Güvenlik',

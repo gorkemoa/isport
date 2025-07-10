@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
+import 'package:isport/services/logger_service.dart';
 import '../models/job_models.dart';
+import '../services/auth_services.dart';
 import '../services/job_service.dart';
 import 'auth_viewmodels.dart';
 
@@ -18,6 +20,9 @@ class JobViewModel extends ChangeNotifier {
   int _currentPage = 1;
   int _totalPages = 1;
   bool _hasMore = true;
+
+  bool _isApplying = false;
+  bool get isApplying => _isApplying;
 
   // Getter'lar
   JobStatus get status => _status;
@@ -80,6 +85,31 @@ class JobViewModel extends ChangeNotifier {
     if (_hasMore && _status != JobStatus.loadingMore && _status != JobStatus.loading) {
       _currentPage++;
       await fetchJobs();
+    }
+  }
+
+  Future<bool> applyToJob({required int jobId, required String token}) async {
+    _isApplying = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _jobService.applyToJob(
+        ApplyJobRequest(userToken: token, jobID: jobId, appNote: ''),
+      );
+      if (response.success) {
+        return true;
+      } else {
+        _errorMessage = response.successMessage ?? 'Başvuru yapılamadı.';
+        return false;
+      }
+    } catch (e, s) {
+      logger.e('Başvuru yapılırken hata oluştu', error: e, stackTrace: s);
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isApplying = false;
+      notifyListeners();
     }
   }
 

@@ -5,6 +5,8 @@ import 'viewmodels/applications_viewmodel.dart';
 import 'viewmodels/auth_viewmodels.dart';
 import 'viewmodels/job_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
+import 'viewmodels/company_job_viewmodel.dart';
+import 'viewmodels/company_applications_viewmodel.dart';
 import 'views/login_screen.dart';
 import 'views/main_screen.dart';
 
@@ -26,6 +28,8 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
         ChangeNotifierProvider(create: (_) => ApplicationsViewModel()),
+        ChangeNotifierProvider(create: (_) => CompanyJobViewModel()),
+        ChangeNotifierProvider(create: (_) => CompanyApplicationsViewModel()),
       ],
       child: MaterialApp(
         title: 'iSport',

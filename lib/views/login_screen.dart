@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:isport/utils/app_constants.dart';
+import 'package:isport/views/home_screen.dart';
+import 'package:isport/views/main_screen.dart';
+import 'package:isport/views/corporate_main_screen.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
 import 'register_screen.dart';
@@ -300,14 +303,20 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text,
       );
 
-      if (success) {
-        // Giriş başarılı - AuthWrapper otomatik olarak HomeScreen'e yönlendirecek
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Giriş başarılı!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+      if (success && mounted) {
+        // Kullanıcı tipine göre yönlendirme yap
+        final user = authViewModel.currentUser;
+        if (user != null && user.isComp) {
+          // Kurumsal kullanıcı - Corporate Main Screen'e yönlendir
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const CorporateMainScreen()),
+          );
+        } else {
+          // İş arayan kullanıcı - Main Screen'e yönlendir
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+          );
+        }
       }
     }
   }
