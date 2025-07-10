@@ -341,6 +341,46 @@ class JobService {
       );
     }
   }
+
+  /// Başvuru detayını getir ve durum güncelle
+  Future<ApplicationDetailResponse> getApplicationDetailUpdate({
+    required int companyId,
+    required ApplicationDetailRequest request,
+  }) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_applicationDetailUpdateEndpoint/$companyId/applicationDetailUpdate');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Başvuru Detay İsteği: $body');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Başvuru Detay Yanıtı: ${response.statusCode} - ${response.body}');
+
+      if (response.statusCode == 410) {
+        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+        return ApplicationDetailResponse.fromJson(jsonData);
+      } else {
+        return ApplicationDetailResponse(
+          error: true,
+          success: false,
+          message410: 'API Hatası: ${response.statusCode}',
+        );
+      }
+    } catch (e, s) {
+      logger.e('Başvuru detayı getirilirken hata', error: e, stackTrace: s);
+      return ApplicationDetailResponse(
+        error: true,
+        success: false,
+        message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
 }
 
 /// Favori ekleme/kaldırma API yanıtı için model
