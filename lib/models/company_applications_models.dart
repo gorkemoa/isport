@@ -286,3 +286,169 @@ class FavoriteApplicantResponseData {
     );
   }
 } 
+
+/// CV verisi
+class CvData {
+  final int cvID;
+  final String cvSummary;
+
+  CvData({
+    required this.cvID,
+    required this.cvSummary,
+  });
+
+  factory CvData.fromJson(Map<String, dynamic> json) {
+    return CvData(
+      cvID: json['cvID'] ?? 0,
+      cvSummary: json['cvSummary'] ?? '',
+    );
+  }
+}
+
+/// Başvuru detayı
+class ApplicationDetail {
+  final int appID;
+  final int jobID;
+  final String jobTitle;
+  final int userID;
+  final String userName;
+  final String userEmail;
+  final String userPhone;
+  final int statusID;
+  final String statusName;
+  final String statusColor;
+  final String appliedAt;
+  final bool isShowContact;
+  final CvData cvData;
+
+  ApplicationDetail({
+    required this.appID,
+    required this.jobID,
+    required this.jobTitle,
+    required this.userID,
+    required this.userName,
+    required this.userEmail,
+    required this.userPhone,
+    required this.statusID,
+    required this.statusName,
+    required this.statusColor,
+    required this.appliedAt,
+    required this.isShowContact,
+    required this.cvData,
+  });
+
+  factory ApplicationDetail.fromJson(Map<String, dynamic> json) {
+    return ApplicationDetail(
+      appID: json['appID'] ?? 0,
+      jobID: json['jobID'] ?? 0,
+      jobTitle: json['jobTitle'] ?? '',
+      userID: json['userID'] ?? 0,
+      userName: json['userName'] ?? '',
+      userEmail: json['userEmail'] ?? '',
+      userPhone: json['userPhone'] ?? '',
+      statusID: json['statusID'] ?? 0,
+      statusName: json['statusName'] ?? '',
+      statusColor: json['statusColor'] ?? '',
+      appliedAt: json['appliedAt'] ?? '',
+      isShowContact: json['isShowContact'] ?? false,
+      cvData: json['cvData'] != null 
+          ? CvData.fromJson(json['cvData'])
+          : CvData(cvID: 0, cvSummary: ''),
+    );
+  }
+
+  /// Status rengi Color objesine çevir
+  Color get statusColorValue {
+    try {
+      return Color(int.parse(statusColor.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      return Colors.grey;
+    }
+  }
+
+  /// Status ikonu
+  IconData get statusIcon {
+    switch (statusID) {
+      case 1:
+        return Icons.schedule;
+      case 2:
+        return Icons.visibility;
+      case 3:
+        return Icons.check_circle;
+      case 4:
+        return Icons.cancel;
+      default:
+        return Icons.help_outline;
+    }
+  }
+
+  /// Kullanıcı adının ilk harfi
+  String get userInitial {
+    return userName.isNotEmpty ? userName[0].toUpperCase() : '?';
+  }
+
+  /// Başvuru tarihini formatla
+  String get formattedAppliedAt {
+    return appliedAt;
+  }
+
+  /// Telefon numarasını formatla
+  String get formattedPhone {
+    return userPhone.isNotEmpty ? userPhone : 'Telefon bilgisi yok';
+  }
+
+  /// Email'i formatla
+  String get formattedEmail {
+    return userEmail.isNotEmpty ? userEmail : 'Email bilgisi yok';
+  }
+}
+
+/// Başvuru detayı isteği
+class ApplicationDetailRequest {
+  final String userToken;
+  final int appID;
+  final int? newStatus; // Opsiyonel - sadece durum güncellemesi için
+
+  ApplicationDetailRequest({
+    required this.userToken,
+    required this.appID,
+    this.newStatus,
+  });
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      'userToken': userToken,
+      'appID': appID,
+    };
+    
+    if (newStatus != null) {
+      data['newStatus'] = newStatus;
+    }
+    
+    return data;
+  }
+}
+
+/// Başvuru detayı yanıtı
+class ApplicationDetailResponse {
+  final bool error;
+  final bool success;
+  final ApplicationDetail? data;
+  final String? message410;
+
+  ApplicationDetailResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.message410,
+  });
+
+  factory ApplicationDetailResponse.fromJson(Map<String, dynamic> json) {
+    return ApplicationDetailResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      data: json['data'] != null ? ApplicationDetail.fromJson(json['data']) : null,
+      message410: json['410'],
+    );
+  }
+} 

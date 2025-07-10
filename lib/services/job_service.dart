@@ -21,6 +21,7 @@ class JobService {
   static const String _companyApplicationsEndpoint = '/service/user/company';
   static const String _favoriteApplicantsEndpoint = '/service/user/company';
   static const String _favoriteApplicantToggleEndpoint = '/service/user/company/favoriteApplicant';
+  static const String _applicationDetailUpdateEndpoint = '/service/user/company';
 
   /// İş ilanlarını getirir
   Future<JobListResponse> getJobList(JobListRequest request) async {
