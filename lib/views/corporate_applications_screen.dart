@@ -635,28 +635,62 @@ class _CorporateApplicationsScreenState extends State<CorporateApplicationsScree
     }
   }
 
-  void _approveApplication(CompanyApplication application) {
-    context.read<CompanyApplicationsViewModel>().updateApplicationStatus(
-      application.appID, 
-      3, // Onaylandı
-      'Onaylandı', 
-      '#4CAF50', // Yeşil
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${application.userName} başvurusu onaylandı')),
-    );
+  Future<void> _approveApplication(CompanyApplication application) async {
+    final authViewModel = context.read<AuthViewModel>();
+    final userToken = authViewModel.currentUser?.token;
+    
+    if (userToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kullanıcı bilgisi bulunamadı')),
+      );
+      return;
+    }
+
+    final success = await context.read<CompanyApplicationsViewModel>()
+        .updateApplicationStatusAPI(
+          appId: application.appID,
+          newStatus: 3, // Onaylandı
+          userToken: userToken,
+        );
+    
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${application.userName} başvurusu onaylandı')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('İşlem gerçekleştirilemedi')),
+      );
+    }
   }
 
-  void _rejectApplication(CompanyApplication application) {
-    context.read<CompanyApplicationsViewModel>().updateApplicationStatus(
-      application.appID, 
-      4, // Reddedildi
-      'Reddedildi', 
-      '#F44336', // Kırmızı
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${application.userName} başvurusu reddedildi')),
-    );
+  Future<void> _rejectApplication(CompanyApplication application) async {
+    final authViewModel = context.read<AuthViewModel>();
+    final userToken = authViewModel.currentUser?.token;
+    
+    if (userToken == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kullanıcı bilgisi bulunamadı')),
+      );
+      return;
+    }
+
+    final success = await context.read<CompanyApplicationsViewModel>()
+        .updateApplicationStatusAPI(
+          appId: application.appID,
+          newStatus: 4, // Reddedildi
+          userToken: userToken,
+        );
+    
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${application.userName} başvurusu reddedildi')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('İşlem gerçekleştirilemedi')),
+      );
+    }
   }
 
   Future<void> _removeFavorite(FavoriteApplicant favorite) async {
@@ -701,10 +735,84 @@ class _CorporateApplicationsScreenState extends State<CorporateApplicationsScree
   }
 }
 
-class ApplicationDetailView extends StatelessWidget {
+class ApplicationDetailView extends StatefulWidget {
   final CompanyApplication application;
 
   const ApplicationDetailView({super.key, required this.application});
+
+  @override
+  State<ApplicationDetailView> createState() => _ApplicationDetailViewState();
+}
+
+class _ApplicationDetailViewState extends State<ApplicationDetailView> {
+  ApplicationDetail? _applicationDetail;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadApplicationDetail();
+  }
+
+  Future<void> _loadApplicationDetail() async {
+    final authViewModel = context.read<AuthViewModel>();
+    final userToken = authViewModel.currentUser?.token;
+    
+    if (userToken == null) {
+      setState(() {
+        _errorMessage = 'Kullanıcı bilgisi bulunamadı';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final detail = await context.read<CompanyApplicationsViewModel>()
+          .getApplicationDetail(
+            appId: widget.application.appID,
+            userToken: userToken,
+          );
+      
+      setState(() {
+        _applicationDetail = detail;
+        _isLoading = false;
+        if (detail == null) {
+          _errorMessage = 'Başvuru detayı yüklenemedi';
+        }
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Hata oluştu: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateStatus(int newStatus) async {
+    final authViewModel = context.read<AuthViewModel>();
+    final userToken = authViewModel.currentUser?.token;
+    
+    if (userToken == null) return;
+
+    final success = await context.read<CompanyApplicationsViewModel>()
+        .updateApplicationStatusAPI(
+          appId: widget.application.appID,
+          newStatus: newStatus,
+          userToken: userToken,
+        );
+    
+    if (success) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Başvuru durumu güncellendi')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('İşlem gerçekleştirilemedi')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

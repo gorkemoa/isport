@@ -172,6 +172,97 @@ class CompanyApplicationsViewModel extends ChangeNotifier {
     }
   }
 
+  /// Başvuru detayını getir
+  Future<ApplicationDetail?> getApplicationDetail({
+    required int appId,
+    required String userToken,
+  }) async {
+    if (_companyId == null) {
+      logger.e('Company ID not set');
+      return null;
+    }
+
+    try {
+      final request = ApplicationDetailRequest(
+        userToken: userToken,
+        appID: appId,
+      );
+
+      final response = await _jobService.getApplicationDetailUpdate(
+        companyId: _companyId!,
+        request: request,
+      );
+
+      if (response.success && response.data != null) {
+        return response.data;
+      } else {
+        logger.e('Failed to get application detail: ${response.message410}');
+        return null;
+      }
+    } catch (e) {
+      logger.e('Error getting application detail: $e');
+      return null;
+    }
+  }
+
+  /// Başvuru durumunu güncelle (API ile)
+  Future<bool> updateApplicationStatusAPI({
+    required int appId,
+    required int newStatus,
+    required String userToken,
+  }) async {
+    if (_companyId == null) {
+      logger.e('Company ID not set');
+      return false;
+    }
+
+    try {
+      final request = ApplicationDetailRequest(
+        userToken: userToken,
+        appID: appId,
+        newStatus: newStatus,
+      );
+
+      final response = await _jobService.getApplicationDetailUpdate(
+        companyId: _companyId!,
+        request: request,
+      );
+
+      if (response.success && response.data != null) {
+        // API başarılı olduğunda local state'i güncelle
+        final updatedDetail = response.data!;
+        final index = _applications.indexWhere((app) => app.appID == appId);
+        
+        if (index != -1) {
+          final app = _applications[index];
+          final updatedApp = CompanyApplication(
+            appID: app.appID,
+            userID: app.userID,
+            jobID: app.jobID,
+            jobStatusID: updatedDetail.statusID,
+            jobTitle: app.jobTitle,
+            jobDesc: app.jobDesc,
+            userName: app.userName,
+            statusName: updatedDetail.statusName,
+            statusColor: updatedDetail.statusColor,
+            isFavorite: app.isFavorite,
+            appliedAt: app.appliedAt,
+          );
+          _applications[index] = updatedApp;
+          notifyListeners();
+        }
+        
+        return true;
+      } else {
+        logger.e('Failed to update application status: ${response.message410}');
+        return false;
+      }
+    } catch (e) {
+      logger.e('Error updating application status: $e');
+      return false;
+    }
+  }
+
   /// Favori aday ID'sine göre favori bul
   FavoriteApplicant? findFavoriteById(int favId) {
     try {
