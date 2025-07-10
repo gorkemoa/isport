@@ -20,15 +20,20 @@ class ApplicationsScreen extends StatelessWidget {
         child: Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            title: const Text('Başvurularım'),
-            bottom: const TabBar(
-              indicatorColor: Colors.white,
+            backgroundColor: AppColors.background,
+            elevation: 0,
+            title: Text(
+              'Başvurularım',
+              style: AppTextStyles.title.copyWith(color: AppColors.textTitle, fontWeight: FontWeight.bold),
+            ),
+            bottom: TabBar(
+              indicatorColor: AppColors.primary,
               indicatorWeight: 3,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white70,
-              tabs: [
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textLight,
+              labelStyle: AppTextStyles.body.copyWith(fontWeight: FontWeight.bold),
+              unselectedLabelStyle: AppTextStyles.body,
+              tabs: const [
                 Tab(text: 'Başvurular'),
                 Tab(text: 'Favoriler'),
               ],
@@ -45,6 +50,7 @@ class ApplicationsScreen extends StatelessWidget {
                     (route) => false,
                   );
                 });
+                return const SizedBox.shrink(); // Yönlendirilirken hiçbir şey gösterme
               }
 
               return RefreshIndicator(
@@ -88,7 +94,7 @@ class ApplicationsScreen extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.pageVertical),
+          horizontal: AppPaddings.pageHorizontal / 2, vertical: AppPaddings.pageVertical),
       itemCount: viewModel.applications.length,
       itemBuilder: (context, index) {
         final application = viewModel.applications[index];
@@ -121,7 +127,7 @@ class ApplicationsScreen extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(
-          horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.pageVertical),
+          horizontal: AppPaddings.pageHorizontal / 2, vertical: AppPaddings.pageVertical),
       itemCount: viewModel.favorites.length,
       itemBuilder: (context, index) {
         final favorite = viewModel.favorites[index];
@@ -131,112 +137,108 @@ class ApplicationsScreen extends StatelessWidget {
   }
 
   Widget _buildApplicationCard(BuildContext context, Application application) {
-    return Container(
+    return Card(
+      elevation: 1.0,
       margin: const EdgeInsets.only(bottom: AppPaddings.item),
-      padding: const EdgeInsets.all(AppPaddings.card),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder.withOpacity(0.8)),
+        side: BorderSide(color: AppColors.cardBorder.withOpacity(0.5)),
       ),
+      color: AppColors.cardBackground,
       child: InkWell(
         onTap: () => _navigateToJobDetail(context, application.jobID),
         borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    application.jobTitle,
-                    style: AppTextStyles.title,
-                  ),
-                ),
-                const SizedBox(width: AppPaddings.item),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _parseColor(application.statusColor).withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    application.statusName,
-                    style: AppTextStyles.body.copyWith(
-                      color: _parseColor(application.statusColor),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
+        child: Padding(
+          padding: const EdgeInsets.all(AppPaddings.card),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      application.jobTitle,
+                      style: AppTextStyles.title,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppPaddings.item),
-            Text(
-              application.jobDesc,
-              style: AppTextStyles.body,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: AppPaddings.card),
-            Row(
-              children: [
-                Icon(Icons.schedule, size: 14, color: AppColors.textLight),
-                const SizedBox(width: 6),
-                Text(
-                  'Başvuru: ${application.appliedAt}',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textLight, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: AppPaddings.item),
+                  _buildStatusChip(
+                      application.statusName, _parseColor(application.statusColor)),
+                ],
+              ),
+              const SizedBox(height: AppPaddings.item),
+              Text(
+                application.jobDesc,
+                style: AppTextStyles.body,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppPaddings.card),
+              Row(
+                children: [
+                  Icon(Icons.schedule, size: 14, color: AppColors.textLight),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Başvuru: ${application.appliedAt}',
+                    style: AppTextStyles.body.copyWith(color: AppColors.textLight, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFavoriteCard(BuildContext context, Favorite favorite) {
-    return Container(
+    return Card(
+      elevation: 1.0,
       margin: const EdgeInsets.only(bottom: AppPaddings.item),
-      padding: const EdgeInsets.all(AppPaddings.card),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cardBorder.withOpacity(0.8)),
+        side: BorderSide(color: AppColors.cardBorder.withOpacity(0.5)),
       ),
+      color: AppColors.cardBackground,
       child: InkWell(
         onTap: () => _navigateToJobDetail(context, favorite.jobID),
         borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              favorite.jobTitle,
-              style: AppTextStyles.title,
-            ),
-            const SizedBox(height: AppPaddings.item / 2),
-            Text(
-              favorite.compName,
-              style: AppTextStyles.company,
-            ),
-            const SizedBox(height: AppPaddings.card),
-            Text(
-              favorite.jobDesc,
-              style: AppTextStyles.body,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: AppPaddings.card),
-            Row(
-              children: [
-                _buildIconText(Icons.work_outline, favorite.workType),
-                const Spacer(),
-                _buildIconText(Icons.schedule, favorite.showDate),
-              ],
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(AppPaddings.card),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                favorite.jobTitle,
+                style: AppTextStyles.title,
+              ),
+              const SizedBox(height: AppPaddings.item / 2),
+              Text(
+                favorite.compName,
+                style: AppTextStyles.company,
+              ),
+              const SizedBox(height: AppPaddings.card),
+              Text(
+                favorite.jobDesc,
+                style: AppTextStyles.body,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppPaddings.card),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildInfoChip(Icons.work_outline, favorite.workType),
+                    const SizedBox(width: 8),
+                    _buildInfoChip(Icons.schedule, favorite.showDate),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -281,11 +283,18 @@ class ApplicationsScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 80, color: AppColors.textLight.withOpacity(0.5)),
-            const SizedBox(height: AppPaddings.card),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 60, color: AppColors.primary),
+            ),
+            const SizedBox(height: AppPaddings.card * 1.5),
             Text(
               title,
-              style: AppTextStyles.title.copyWith(color: AppColors.textTitle),
+              style: AppTextStyles.title.copyWith(color: AppColors.textTitle, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: AppPaddings.item),
             Text(
@@ -305,6 +314,7 @@ class ApplicationsScreen extends StatelessWidget {
       isScrollControlled: true, // İçeriğin yüksekliğine göre ayarlanmasını sağlar
       backgroundColor: Colors.transparent, // Arka planı transparan yapıp alttaki container'a yetki ver
       builder: (_) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
         decoration: const BoxDecoration(
           color: AppColors.background,
           borderRadius: BorderRadius.only(
@@ -344,6 +354,51 @@ class ApplicationsScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildStatusChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: AppTextStyles.body.copyWith(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 } 

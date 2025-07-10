@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/auth_viewmodels.dart';
 import '../viewmodels/job_viewmodel.dart';
 import '../models/job_models.dart';
 import 'job_detail_screen.dart';
@@ -45,21 +44,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('İş İlanları'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () => _showUserInfoDialog(context),
-            tooltip: 'Kullanıcı Bilgileri',
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _showLogoutDialog(context, context.read<AuthViewModel>()),
-            tooltip: 'Çıkış Yap',
-          ),
-        ],
+        title: Text(
+          'İş İlanları',
+          style: AppTextStyles.title.copyWith(color: AppColors.textTitle),
+        ),
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        // Kullanıcı bilgileri ve çıkış yapma eylemleri, genellikle bir
+        // BottomNavigationBar aracılığıyla erişilen özel bir profil ekranına taşınmalıdır.
       ),
       body: Consumer<JobViewModel>(
         builder: (context, jobViewModel, child) {
@@ -77,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final status = jobViewModel.status;
     final jobs = jobViewModel.jobs;
 
-    if (status == JobStatus.loading) {
+    if (status == JobStatus.loading && jobs.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
     }
 
@@ -102,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: AppPaddings.item),
+      padding: const EdgeInsets.all(AppPaddings.pageHorizontal / 2),
       controller: _scrollController,
       itemCount: jobs.length + (jobViewModel.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
@@ -116,77 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
   }
-  
-  void _showUserInfoDialog(BuildContext context) {
-    final user = context.read<AuthViewModel>().currentUser;
-    if (user == null) return;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Kullanıcı Bilgileri'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                _buildInfoRow('Kullanıcı ID:', user.userID.toString()),
-                _buildInfoRow('E-posta:', user.userEmail),
-                _buildInfoRow('Şirket Hesabı:', user.isComp ? 'Evet' : 'Hayır'),
-                _buildInfoRow('Token:', '${user.token.substring(0, 10)}...'),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Kapat'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        );
-      },
-    );
-  }
-  
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: RichText(
-        text: TextSpan(
-          style: DefaultTextStyle.of(context).style,
-          children: <TextSpan>[
-            TextSpan(text: '$label ', style: const TextStyle(fontWeight: FontWeight.bold)),
-            TextSpan(text: value),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context, AuthViewModel authViewModel) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Çıkış Yap'),
-          content: const Text('Çıkış yapmak istediğinizden emin misiniz?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('İptal'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await authViewModel.logout();
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Çıkış Yap'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
 class JobCard extends StatelessWidget {
@@ -195,126 +116,149 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true, // İçeriğin yüksekliğine göre ayarlanmasını sağlar
-          backgroundColor: Colors.transparent, // Arka planı transparan yapıp alttaki container'a yetki ver
-          builder: (_) => Container(
-            decoration: const BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+    return Card(
+      elevation: 1.0,
+      margin: const EdgeInsets.symmetric(
+          horizontal: AppPaddings.pageHorizontal / 2, vertical: AppPaddings.item / 2),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: AppColors.cardBorder.withOpacity(0.5)),
+      ),
+      color: AppColors.cardBackground,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true, // İçeriğin yüksekliğine göre ayarlanmasını sağlar
+            backgroundColor: Colors.transparent, // Arka planı transparan yapıp alttaki container'a yetki ver
+            builder: (_) => Container(
+              height: MediaQuery.of(context).size.height * 0.9,
+              decoration: const BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
               ),
+              child: JobDetailBottomSheet(jobId: job.jobID),
             ),
-            child: JobDetailBottomSheet(jobId: job.jobID),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-            horizontal: AppPaddings.pageHorizontal, vertical: AppPaddings.item / 2),
-        padding: const EdgeInsets.all(AppPaddings.card),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cardBorder.withOpacity(0.8)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logo
-                Image.network(
-                  job.jobImage,
-                  width: 40,
-                  height: 40,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(width: 12),
-                // Job Title, Company Name
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        job.jobTitle,
-                        style: AppTextStyles.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        job.compName,
-                        style: AppTextStyles.company,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(AppPaddings.card),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Logo
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.cardBorder.withOpacity(0.3)),
+                    ),
+                    child: Image.network(
+                      job.jobImage,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Icon(Icons.business, size: 48, color: AppColors.textLight),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Favorite Button
-                Consumer<JobViewModel>(
-                  builder: (context, jobViewModel, child) {
-                    return GestureDetector(
-                      onTap: () async {
-                        await jobViewModel.toggleJobFavorite(job.jobID);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
+                  const SizedBox(width: 12),
+                  // Job Title, Company Name
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job.jobTitle,
+                          style: AppTextStyles.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          job.compName,
+                          style: AppTextStyles.company,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                         Text(
+                          '${job.jobCity}, ${job.jobDistrict}',
+                          style: AppTextStyles.body.copyWith(color: AppColors.textLight),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Favorite Button
+                  Consumer<JobViewModel>(
+                    builder: (context, jobViewModel, child) {
+                      return IconButton(
+                        splashRadius: 20,
+                        icon: Icon(
                           job.isFavorite ? Icons.favorite : Icons.favorite_border,
                           color: job.isFavorite ? Colors.redAccent : AppColors.textLight,
-                          size: 24,
                         ),
-                      ),
-                    );
-                  },
+                        onPressed: () => jobViewModel.toggleJobFavorite(job.jobID),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppPaddings.card),
+              // Bottom Info Row
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildInfoChip(context, Icons.work_outline, job.workType),
+                    const SizedBox(width: 8),
+                    _buildInfoChip(context, Icons.access_time_outlined, job.showDate),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: AppPaddings.card),
-            // Bottom Info Row
-            Row(
-              children: [
-                Expanded(
-                  child: _buildIconText(
-                      context, Icons.location_on_outlined, '${job.jobCity}, ${job.jobDistrict}'),
-                ),
-                const SizedBox(width: 16),
-                _buildIconText(
-                    context, Icons.access_time_outlined, job.showDate),
-                 const SizedBox(width: 16),
-                _buildIconText(
-                    context, Icons.work_outline, job.workType),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildIconText(BuildContext context, IconData icon, String text) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: AppColors.textLight),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            text,
-            style: AppTextStyles.body.copyWith(color: AppColors.textLight),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+  Widget _buildInfoChip(BuildContext context, IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              style: AppTextStyles.body.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 } 

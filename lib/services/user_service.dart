@@ -13,6 +13,7 @@ class UserService {
   static const String _baseUrl = 'https://api.rivorya.com/isport';
   static const String _userEndpoint = '/service/user/id';
   static const String _updateUserEndpoint = '/service/user/update/account';
+  static const String _updatePasswordEndpoint = '/service/user/update/password';
 
   /// Kullanıcı bilgilerini getirir
   Future<UserResponse> getUser({required String? userToken}) async {
@@ -109,6 +110,36 @@ class UserService {
 
     } catch (e, s) {
       logger.e('Kullanıcı güncellenirken hata', error: e, stackTrace: s);
+      return GenericAuthResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Kullanıcı şifresini günceller
+  Future<GenericAuthResponse> updatePassword(UpdatePasswordRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_updatePasswordEndpoint');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Şifre Güncelleme İsteği gönderiliyor.');
+
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Şifre Güncelleme Yanıtı: ${response.statusCode} - ${response.body}');
+
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return GenericAuthResponse.fromJson(jsonData);
+
+    } catch (e, s) {
+      logger.e('Şifre güncellenirken hata', error: e, stackTrace: s);
       return GenericAuthResponse(
         error: true,
         success: false,

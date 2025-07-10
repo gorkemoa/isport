@@ -14,9 +14,8 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _RegisterScreenState extends State<RegisterScreen> {
+  int _currentTab = 0;
 
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
@@ -42,7 +41,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthViewModel>().clearError();
     });
@@ -50,7 +48,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _firstnameController.dispose();
     _lastnameController.dispose();
     _emailController.dispose();
@@ -78,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       return;
     }
 
-    final isCompany = _tabController.index == 1;
+    final isCompany = _currentTab == 1;
 
     final request = RegisterRequest(
       userFirstname: _firstnameController.text.trim(),
@@ -112,185 +109,228 @@ class _RegisterScreenState extends State<RegisterScreen>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Yeni Hesap Oluştur'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Bireysel'),
-            Tab(text: 'Kurumsal'),
-          ],
-        ),
+        leading: BackButton(color: AppColors.textBody),
       ),
       body: Form(
         key: _formKey,
-        child: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildForm(isCompany: false),
-            _buildForm(isCompany: true),
-          ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppPaddings.pageHorizontal)
+              .copyWith(bottom: AppPaddings.pageVertical),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Text(
+                "Yeni bir hesap oluştur",
+                style: textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textTitle,
+                ),
+              ),
+              const SizedBox(height: AppPaddings.item),
+              Text(
+                "Kariyerinize ilk adımı atın.",
+                style: textTheme.titleMedium?.copyWith(
+                  color: AppColors.textLight,
+                ),
+              ),
+              const SizedBox(height: AppPaddings.pageVertical),
+
+              _buildAccountTypeSwitcher(),
+
+              const SizedBox(height: AppPaddings.pageVertical),
+              
+              _buildFormFields(isCompany: _currentTab == 1),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildForm({required bool isCompany}) {
-    final authViewModel = context.watch<AuthViewModel>();
-    
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppPaddings.pageHorizontal,
-        vertical: AppPaddings.pageVertical,
+  Widget _buildAccountTypeSwitcher() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.cardBorder),
       ),
-      child: Column(
-        children: [
-          // Bireysel Alanlar
-          TextFormField(
-            controller: _firstnameController,
-            decoration: _buildInputDecoration(labelText: 'Ad'),
-            validator: (v) => v!.isEmpty ? 'Ad alanı zorunludur' : null,
-          ),
-          const SizedBox(height: AppPaddings.card),
-          TextFormField(
-            controller: _lastnameController,
-            decoration: _buildInputDecoration(labelText: 'Soyad'),
-            validator: (v) => v!.isEmpty ? 'Soyad alanı zorunludur' : null,
-          ),
-          const SizedBox(height: AppPaddings.card),
-          TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: _buildInputDecoration(labelText: 'E-posta'),
-            validator: (v) {
-              if (v == null || v.isEmpty) return 'E-posta zorunludur';
-              if (!v.contains('@')) return 'Geçerli bir e-posta girin';
-              return null;
-            },
-          ),
-          const SizedBox(height: AppPaddings.card),
-           TextFormField(
-            controller: _phoneController,
-            keyboardType: TextInputType.phone,
-            decoration: _buildInputDecoration(labelText: 'Telefon Numarası'),
-            validator: (v) => v!.isEmpty ? 'Telefon numarası zorunludur' : null,
-          ),
-          const SizedBox(height: AppPaddings.card),
-          TextFormField(
-            controller: _passwordController,
-            obscureText: _obscurePassword,
-            decoration: _buildInputDecoration(labelText: 'Şifre').copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                  _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: AppColors.textLight,
-                ),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-              ),
-            ),
-             validator: (v) => v!.isEmpty ? 'Şifre alanı zorunludur' : null,
-          ),
-          
-          // Kurumsal Alanlar
-          if (isCompany) ...[
-             const SizedBox(height: AppPaddings.pageVertical),
-             const Divider(),
-             const SizedBox(height: AppPaddings.card),
-             Text('Firma Bilgileri', style: Theme.of(context).textTheme.titleLarge),
-             const SizedBox(height: AppPaddings.card),
-             TextFormField(
-              controller: _compNameController,
-              decoration: _buildInputDecoration(labelText: 'Firma Adı'),
-              validator: (v) => isCompany && v!.isEmpty ? 'Firma adı zorunludur' : null,
-            ),
-            const SizedBox(height: AppPaddings.card),
-            TextFormField(
-              controller: _compAddressController,
-              decoration: _buildInputDecoration(labelText: 'Firma Adresi'),
-              validator: (v) => isCompany && v!.isEmpty ? 'Firma adresi zorunludur' : null,
-            ),
-             const SizedBox(height: AppPaddings.card),
-            TextFormField(
-              controller: _compTaxNumberController,
-              keyboardType: TextInputType.number,
-              decoration: _buildInputDecoration(labelText: 'TC / Vergi Numarası'),
-              validator: (v) => isCompany && v!.isEmpty ? 'TC/Vergi No zorunludur' : null,
-            ),
-             const SizedBox(height: AppPaddings.card),
-            TextFormField(
-              controller: _compTaxPlaceController,
-              decoration: _buildInputDecoration(labelText: 'Vergi Dairesi'),
-            ),
-          ],
-          
-          const SizedBox(height: AppPaddings.pageVertical),
-
-          // Sözleşmeler
-          _buildCheckbox(
-            title: 'Kullanım Koşullarını ve Gizlilik Politikasını',
-            subtitle: ' okudum, anladım ve kabul ediyorum.',
-            value: _policyChecked,
-            onChanged: (val) => setState(() => _policyChecked = val!),
-          ),
-           _buildCheckbox(
-            title: 'KVKK Aydınlatma Metni\'ni',
-            subtitle: ' okudum ve anladım.',
-            value: _kvkkChecked,
-            onChanged: (val) => setState(() => _kvkkChecked = val!),
-          ),
-
-          const SizedBox(height: AppPaddings.pageVertical),
-
-          // Hata Mesajı
-          if (authViewModel.errorMessage != null) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red[200]!),
-              ),
-              child: Text(
-                authViewModel.errorMessage!,
-                style: TextStyle(color: Colors.red[800], fontWeight: FontWeight.w500),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: AppPaddings.card),
-          ],
-
-          // Kayıt Butonu
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: authViewModel.isLoading ? null : () => _handleRegister(authViewModel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
-              ),
-              child: authViewModel.isLoading
-                  ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
-                  : const Text('Kayıt Ol', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            ),
-          ),
+      child: ToggleButtons(
+        renderBorder: false,
+        isSelected: [_currentTab == 0, _currentTab == 1],
+        onPressed: (index) => setState(() => _currentTab = index),
+        borderRadius: BorderRadius.circular(10),
+        selectedColor: Colors.white,
+        fillColor: AppColors.primary,
+        color: AppColors.textBody,
+        splashColor: AppColors.primary.withOpacity(0.2),
+        borderColor: Colors.transparent,
+        selectedBorderColor: Colors.transparent,
+        constraints: BoxConstraints.expand(
+            width: (MediaQuery.of(context).size.width / 2) - AppPaddings.pageHorizontal - 2),
+        children: const [
+          Text("Bireysel", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          Text("Kurumsal", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
         ],
       ),
+    );
+  }
+
+  Widget _buildFormFields({required bool isCompany}) {
+    final authViewModel = context.watch<AuthViewModel>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Bireysel Alanlar
+        TextFormField(
+          controller: _firstnameController,
+          decoration: _buildInputDecoration(labelText: 'Ad'),
+          validator: (v) => v!.isEmpty ? 'Ad alanı zorunludur' : null,
+        ),
+        const SizedBox(height: AppPaddings.card),
+        TextFormField(
+          controller: _lastnameController,
+          decoration: _buildInputDecoration(labelText: 'Soyad'),
+          validator: (v) => v!.isEmpty ? 'Soyad alanı zorunludur' : null,
+        ),
+        const SizedBox(height: AppPaddings.card),
+        TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: _buildInputDecoration(labelText: 'E-posta'),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'E-posta zorunludur';
+            if (!v.contains('@')) return 'Geçerli bir e-posta girin';
+            return null;
+          },
+        ),
+        const SizedBox(height: AppPaddings.card),
+        TextFormField(
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
+          decoration: _buildInputDecoration(labelText: 'Telefon Numarası'),
+          validator: (v) => v!.isEmpty ? 'Telefon numarası zorunludur' : null,
+        ),
+        const SizedBox(height: AppPaddings.card),
+        TextFormField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          decoration: _buildInputDecoration(labelText: 'Şifre').copyWith(
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                color: AppColors.textLight,
+              ),
+              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+            ),
+          ),
+          validator: (v) => v!.isEmpty ? 'Şifre alanı zorunludur' : null,
+        ),
+
+        // Kurumsal Alanlar
+        if (isCompany) ...[
+          const SizedBox(height: AppPaddings.pageVertical),
+          const Divider(),
+          const SizedBox(height: AppPaddings.card),
+          Text(
+            'Firma Bilgileri',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: AppPaddings.card),
+          TextFormField(
+            controller: _compNameController,
+            decoration: _buildInputDecoration(labelText: 'Firma Adı'),
+            validator: (v) => isCompany && v!.isEmpty ? 'Firma adı zorunludur' : null,
+          ),
+          const SizedBox(height: AppPaddings.card),
+          TextFormField(
+            controller: _compAddressController,
+            decoration: _buildInputDecoration(labelText: 'Firma Adresi'),
+            validator: (v) => isCompany && v!.isEmpty ? 'Firma adresi zorunludur' : null,
+          ),
+          const SizedBox(height: AppPaddings.card),
+          TextFormField(
+            controller: _compTaxNumberController,
+            keyboardType: TextInputType.number,
+            decoration: _buildInputDecoration(labelText: 'TC / Vergi Numarası'),
+            validator: (v) => isCompany && v!.isEmpty ? 'TC/Vergi No zorunludur' : null,
+          ),
+          const SizedBox(height: AppPaddings.card),
+          TextFormField(
+            controller: _compTaxPlaceController,
+            decoration: _buildInputDecoration(labelText: 'Vergi Dairesi'),
+          ),
+        ],
+
+        const SizedBox(height: AppPaddings.pageVertical),
+
+        // Sözleşmeler
+        _buildCheckbox(
+          title: 'Kullanım Koşullarını ve Gizlilik Politikasını',
+          subtitle: ' okudum, anladım ve kabul ediyorum.',
+          value: _policyChecked,
+          onChanged: (val) => setState(() => _policyChecked = val!),
+        ),
+        const SizedBox(height: AppPaddings.item),
+        _buildCheckbox(
+          title: 'KVKK Aydınlatma Metni\'ni',
+          subtitle: ' okudum ve anladım.',
+          value: _kvkkChecked,
+          onChanged: (val) => setState(() => _kvkkChecked = val!),
+        ),
+
+        const SizedBox(height: AppPaddings.pageVertical),
+
+        // Hata Mesajı
+        if (authViewModel.errorMessage != null) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red[200]!),
+            ),
+            child: Text(
+              authViewModel.errorMessage!,
+              style: TextStyle(color: Colors.red[800], fontWeight: FontWeight.w500),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: AppPaddings.card),
+        ],
+
+        // Kayıt Butonu
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: authViewModel.isLoading ? null : () => _handleRegister(authViewModel),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              disabledBackgroundColor: AppColors.primary.withOpacity(0.5),
+            ),
+            child: authViewModel.isLoading
+                ? const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white))
+                : const Text('Kayıt Ol',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
     );
   }
 
@@ -321,37 +361,49 @@ class _RegisterScreenState extends State<RegisterScreen>
     required bool value,
     required ValueChanged<bool?> onChanged,
   }) {
-    return FormField<bool>(
-      builder: (state) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CheckboxListTile(
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 24.0,
+            width: 24.0,
+            child: Checkbox(
               value: value,
               onChanged: onChanged,
-              title: RichText(
+              activeColor: AppColors.primary,
+            ),
+          ),
+          const SizedBox(width: AppPaddings.item),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2.0),
+              child: RichText(
                 text: TextSpan(
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textBody),
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: AppColors.textBody),
                   children: [
                     TextSpan(
                       text: title,
-                      style: const TextStyle(color: AppColors.primary, decoration: TextDecoration.underline),
-                      recognizer: TapGestureRecognizer()..onTap = () {
-                        // TODO: İlgili sözleşme sayfasına yönlendir.
-                        print('$title tıklandı.');
-                      },
+                      style: const TextStyle(
+                          color: AppColors.primary, fontWeight: FontWeight.bold),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () {
+                          // TODO: İlgili sözleşme sayfasına yönlendir.
+                          print('$title tıklandı.');
+                        },
                     ),
                     TextSpan(text: subtitle),
                   ],
                 ),
               ),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
-
 } 

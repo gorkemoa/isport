@@ -106,6 +106,45 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
+  /// Kullanıcı şifresini günceller.
+  /// Başarılı olursa true döner.
+  Future<bool> updatePassword(UpdatePasswordRequest request) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await _userService.updatePassword(request);
+
+      if (response.success) {
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        String errorMessage = response.message ?? 'Şifre güncellenemedi.';
+        if (response.validationErrors != null && response.validationErrors!.isNotEmpty) {
+           errorMessage = response.validationErrors!.values.first.toString();
+        }
+        _errorMessage = errorMessage;
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e, s) {
+      logger.e('Şifre güncellenirken hata', error: e, stackTrace: s);
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Hata mesajını temizler
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     try {
       await _authService.logout();

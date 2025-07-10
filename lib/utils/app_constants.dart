@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF5F27CD); // Kariyer.net inspired purple
-  static const Color primaryDark = Color(0xFF481EA8);
+  static const Color primary = Color(0xFFFCD401); 
+  static const Color primaryDark = Color(0xFFFCD401);
   static const Color accent = Color(0xFF00C4B4); // A teal/green accent
   static const Color textTitle = Color(0xFF212121);
   static const Color textBody = Color(0xFF424242);
