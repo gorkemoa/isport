@@ -24,6 +24,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+    <string>Profil fotoğrafı çekebilmeniz için kameranıza erişmemiz gerekiyor.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Profil fotoğrafınızı seçebilmeniz için fotoğraf galerinize erişmemiz gerekiyor.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Profil videosu çekebilmeniz için mikrofonunuza erişmemiz gerekiyor.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
