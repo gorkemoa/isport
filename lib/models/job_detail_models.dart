@@ -105,3 +105,65 @@ class JobDetailResponse {
     );
   }
 } 
+
+/// İlana başvuru isteği için model
+class ApplyJobRequest {
+  final String userToken;
+  final int jobID;
+  final String? appNote;
+
+  ApplyJobRequest({
+    required this.userToken,
+    required this.jobID,
+    this.appNote,
+  });
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> map = {
+      'userToken': userToken,
+      'jobID': jobID,
+    };
+    if (appNote != null && appNote!.isNotEmpty) {
+      map['appNote'] = appNote!;
+    }
+    return map;
+  }
+}
+
+/// İlana başvuru yanıtındaki 'data' alanı
+class ApplyJobData {
+  final int appID;
+
+  ApplyJobData({required this.appID});
+
+  factory ApplyJobData.fromJson(Map<String, dynamic> json) {
+    return ApplyJobData(appID: json['appID'] ?? 0);
+  }
+}
+
+/// İlana başvuru yanıtı için model
+class ApplyJobResponse {
+  final bool error;
+  final bool success;
+  final String? successMessage;
+  final ApplyJobData? data;
+  final String? message410;
+
+  ApplyJobResponse({
+    required this.error,
+    required this.success,
+    this.successMessage,
+    this.data,
+    this.message410,
+  });
+
+  factory ApplyJobResponse.fromJson(Map<String, dynamic> json) {
+    return ApplyJobResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      successMessage: json['success_message'],
+      data: json['data'] != null ? ApplyJobData.fromJson(json['data']) : null,
+      message410: json['410'],
+    );
+  }
+} 

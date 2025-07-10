@@ -13,6 +13,7 @@ class JobService {
   static const String _jobDetailEndpointBase = '/service/user/company';
   static const String _favoriteAddEndpoint = '/service/user/account/jobFavoriteAdd';
   static const String _favoriteRemoveEndpoint = '/service/user/account/jobFavoriteRemove';
+  static const String _jobApplyEndpoint = '/service/user/account/jobApply';
 
   /// İş ilanlarını getirir
   Future<JobListResponse> getJobList(JobListRequest request) async {
@@ -158,6 +159,36 @@ class JobService {
         error: true,
         success: false,
         message: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// İlana başvuru yapar
+  Future<ApplyJobResponse> applyToJob(ApplyJobRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_jobApplyEndpoint');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+      final body = jsonEncode(request.toJson());
+
+      logger.d('İlana Başvuru İsteği: $body');
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('İlana Başvuru Yanıtı: ${response.statusCode} - ${response.body}');
+      
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return ApplyJobResponse.fromJson(jsonData);
+
+    } catch (e, s) {
+      logger.e('İlana başvuru yapılırken hata', error: e, stackTrace: s);
+      return ApplyJobResponse(
+        error: true,
+        success: false,
+        successMessage: 'Ağ Hatası: $e',
       );
     }
   }

@@ -143,6 +143,84 @@ class _JobDetailBottomSheetState extends State<JobDetailBottomSheet> {
     }
   }
 
+  Future<void> _handleApply(int jobID, String? appNote) async {
+     try {
+      final authViewModel = Provider.of<AuthViewModel>(context, listen: false);
+      final String? token = await authViewModel.getToken();
+      
+      if (token == null) {
+        _showErrorSnackBar('Başvuru yapmak için giriş yapmalısınız.');
+        return;
+      }
+
+      final request = ApplyJobRequest(userToken: token, jobID: jobID, appNote: appNote);
+      final response = await _jobService.applyToJob(request);
+
+      if (response.success) {
+        setState(() {
+          _isApplied = true;
+        });
+        _showSuccessSnackBar(response.successMessage ?? 'Başvurunuz başarıyla alındı.');
+      } else {
+        _showErrorSnackBar(response.successMessage ?? 'Başvuru sırasında bir hata oluştu.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Bir hata oluştu: $e');
+    }
+  }
+
+  void _showApplyDialog(int jobID) {
+    final noteController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('İlana Başvur'),
+          content: TextField(
+            controller: noteController,
+            decoration: const InputDecoration(
+              hintText: 'Başvuru notunuz (isteğe bağlı)',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('İptal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                 Navigator.pop(context);
+                _handleApply(jobID, noteController.text.trim());
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Başvur', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+     ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   Widget _buildBody(AsyncSnapshot<JobDetailResponse> snapshot, JobDetail? job) {
     if (snapshot.connectionState == ConnectionState.waiting) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primary));
@@ -405,10 +483,7 @@ class _JobDetailBottomSheetState extends State<JobDetailBottomSheet> {
           onPressed: _isApplied!
               ? null
               : () {
-                  setState(() {
-                    _isApplied = true;
-                  });
-                  // TODO: API'ye başvuru isteği gönderilecek.
+                  _showApplyDialog(job.jobID);
                 },
           style: ElevatedButton.styleFrom(
             minimumSize: const Size(double.infinity, 48),

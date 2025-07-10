@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/user_model.dart';
 import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/auth_viewmodels.dart';
+import 'edit_profile_screen.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -20,6 +21,31 @@ class ProfileScreen extends StatelessWidget {
           title: const Text('Profilim'),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          actions: [
+            Consumer<ProfileViewModel>(
+              builder: (context, viewModel, child) {
+                return IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Profili Düzenle',
+                  onPressed: viewModel.isLoading || viewModel.userResponse?.data?.user == null
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChangeNotifierProvider.value(
+                                value: viewModel, // Mevcut viewModel'i pasla
+                                child: EditProfileScreen(
+                                  user: viewModel.userResponse!.data!.user,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                );
+              },
+            ),
+          ],
         ),
         body: Consumer<ProfileViewModel>(
           builder: (context, viewModel, child) {

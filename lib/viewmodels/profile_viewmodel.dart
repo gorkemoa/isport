@@ -58,6 +58,54 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
+  /// Kullanıcı bilgilerini günceller.
+  /// Başarılı olursa true döner ve profil verisini yeniler.
+  Future<bool> updateUser(UpdateUserRequest request) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      // Token'ı yeniden alarak güncelliğinden emin olalım
+      final String? token = await _authService.loadToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Giriş yapmış bir kullanıcı bulunamadı.');
+      }
+      // Request içindeki token'ı en güncel haliyle değiştir.
+      final updatedRequest = UpdateUserRequest(
+        userToken: token,
+        userFirstname: request.userFirstname,
+        userLastname: request.userLastname,
+        userEmail: request.userEmail,
+        userPhone: request.userPhone,
+        userBirthday: request.userBirthday,
+        userGender: request.userGender,
+        profilePhoto: request.profilePhoto,
+      );
+
+
+      final response = await _userService.updateUser(updatedRequest);
+
+      if (response.success) {
+        // Başarılı güncellemeden sonra profil verilerini yeniden çek
+        await fetchUser();
+        // isLoading zaten fetchUser içinde false'a çekiliyor.
+        return true;
+      } else {
+        _errorMessage = response.message ?? 'Kullanıcı bilgileri güncellenemedi.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e, s) {
+      logger.e('Kullanıcı güncellenirken hata', error: e, stackTrace: s);
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _authService.logout();

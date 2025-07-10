@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 
 import '../models/user_model.dart';
+import '../models/auth_models.dart';
 import 'auth_services.dart';
 import 'logger_service.dart';
 
@@ -11,6 +12,7 @@ class UserService {
   // API sabitleri - AuthService ile aynı base URL
   static const String _baseUrl = 'https://api.rivorya.com/isport';
   static const String _userEndpoint = '/service/user/id';
+  static const String _updateUserEndpoint = '/service/user/update/account';
 
   /// Kullanıcı bilgilerini getirir
   Future<UserResponse> getUser({required String? userToken}) async {
@@ -81,6 +83,36 @@ class UserService {
         error: true,
         success: false,
         message410: 'Ağ Hatası: $e',
+      );
+    }
+  }
+
+  /// Kullanıcı bilgilerini günceller
+  Future<GenericAuthResponse> updateUser(UpdateUserRequest request) async {
+    try {
+      final url = Uri.parse('$_baseUrl$_updateUserEndpoint');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+      final body = jsonEncode(request.toJson());
+
+      logger.d('Kullanıcı Güncelleme İsteği: $body');
+
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      logger.d('Kullanıcı Güncelleme Yanıtı: ${response.statusCode} - ${response.body}');
+      
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      return GenericAuthResponse.fromJson(jsonData);
+
+    } catch (e, s) {
+      logger.e('Kullanıcı güncellenirken hata', error: e, stackTrace: s);
+      return GenericAuthResponse(
+        error: true,
+        success: false,
+        message: 'Ağ Hatası: $e',
       );
     }
   }

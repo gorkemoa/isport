@@ -105,4 +105,43 @@ class UserResponse {
       message410: json['410'],
     );
   }
+}
+
+/// Kullanıcı güncelleme isteği için model.
+class UpdateUserRequest {
+  final String userToken;
+  final String userFirstname;
+  final String userLastname;
+  final String userEmail;
+  final String userPhone;
+  final String userBirthday;
+  final int userGender; // 1: Erkek, 2: Kadın, 3: Belirtilmemiş
+  final String? profilePhoto; // base64 string
+
+  UpdateUserRequest({
+    required this.userToken,
+    required this.userFirstname,
+    required this.userLastname,
+    required this.userEmail,
+    required this.userPhone,
+    required this.userBirthday,
+    required this.userGender,
+    this.profilePhoto,
+  });
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> map = {
+      'userToken': userToken,
+      'userFirstname': userFirstname,
+      'userLastname': userLastname,
+      'userEmail': userEmail,
+      'userPhone': userPhone,
+      'userBirthday': userBirthday,
+      'userGender': userGender,
+    };
+    if (profilePhoto != null && profilePhoto!.isNotEmpty) {
+      map['profilePhoto'] = profilePhoto;
+    }
+    return map;
+  }
 } 
