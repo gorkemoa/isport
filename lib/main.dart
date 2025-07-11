@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'viewmodels/applications_viewmodel.dart';
 import 'viewmodels/auth_viewmodels.dart';
-import 'viewmodels/job_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
-import 'viewmodels/company_job_viewmodel.dart';
-import 'viewmodels/company_applications_viewmodel.dart';
+import 'views/home_screen.dart';
 import 'views/login_screen.dart';
-import 'views/main_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,14 +18,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
-        ChangeNotifierProxyProvider<AuthViewModel, JobViewModel>(
-          create: (context) => JobViewModel(context.read<AuthViewModel>()),
-          update: (context, auth, previous) => JobViewModel(auth),
-        ),
         ChangeNotifierProvider(create: (_) => ProfileViewModel()),
-        ChangeNotifierProvider(create: (_) => ApplicationsViewModel()),
-        ChangeNotifierProvider(create: (_) => CompanyJobViewModel()),
-        ChangeNotifierProvider(create: (_) => CompanyApplicationsViewModel()),
       ],
       child: MaterialApp(
         title: 'iSport',
@@ -58,7 +47,7 @@ class AuthWrapper extends StatelessWidget {
               return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
             if (snapshot.hasData && snapshot.data == true) {
-              return const MainScreen();
+              return const HomeScreen();
             }
             return const LoginScreen();
           },

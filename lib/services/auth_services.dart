@@ -57,9 +57,14 @@ class AuthService {
         headers: headers,
         body: body,
       );
+      
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
-      if (response.statusCode == 410) {
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 403) {
+        return LoginResponse.fromJson(jsonData, isTokenError: true);
+      }
+      
+      if (response.statusCode == 410 || response.statusCode == 417 || response.statusCode == 200) {
         final loginResponse = LoginResponse.fromJson(jsonData);
         
         // Başarılı giriş durumunda kullanıcı verilerini kaydet
@@ -72,14 +77,14 @@ class AuthService {
         return LoginResponse(
           error: true,
           success: false,
-          message410: 'HTTP Error: ${response.statusCode}',
+          error_message: 'HTTP Error: ${response.statusCode}',
         );
       }
     } catch (e) {
       return LoginResponse(
         error: true,
         success: false,
-        message410: 'Network Error: $e',
+        error_message: 'Network Error: $e',
       );
     }
   }
@@ -100,23 +105,28 @@ class AuthService {
       );
 
       logger.d('Kayıt Yanıtı: ${response.statusCode} - ${response.body}');
+      
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
-      if (response.statusCode == 410 || response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 403) {
+        return RegisterResponse.fromJson(jsonData, isTokenError: true);
+      }
+
+      if (response.statusCode == 410 || response.statusCode == 200 || response.statusCode == 417) {
         final registerResponse = RegisterResponse.fromJson(jsonData);
         return registerResponse;
       } else {
         return RegisterResponse(
           error: true,
           success: false,
-          message410: 'HTTP Hatası: ${response.statusCode}',
+          error_message: 'HTTP Hatası: ${response.statusCode}',
         );
       }
     } catch (e) {
       return RegisterResponse(
         error: true,
         success: false,
-        message410: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
       );
     }
   }
@@ -133,13 +143,17 @@ class AuthService {
       logger.d('Şifremi Unuttum Yanıtı: ${response.statusCode} - ${response.body}');
 
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 403) {
+        return ForgotPasswordResponse.fromJson(jsonData, isTokenError: true);
+      }
       return ForgotPasswordResponse.fromJson(jsonData);
 
     } catch (e) {
       return ForgotPasswordResponse(
         error: true,
         success: false,
-        message: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
       );
     }
   }
@@ -156,13 +170,17 @@ class AuthService {
       logger.d('Kod Kontrol Yanıtı: ${response.statusCode} - ${response.body}');
 
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 403) {
+        return GenericAuthResponse.fromJson(jsonData, isTokenError: true);
+      }
       return GenericAuthResponse.fromJson(jsonData);
 
     } catch (e) {
       return GenericAuthResponse(
         error: true,
         success: false,
-        message: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
       );
     }
   }
@@ -179,13 +197,17 @@ class AuthService {
       logger.d('Şifre Sıfırlama Yanıtı: ${response.statusCode} - ${response.body}');
 
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 403) {
+        return GenericAuthResponse.fromJson(jsonData, isTokenError: true);
+      }
       return GenericAuthResponse.fromJson(jsonData);
 
     } catch (e) {
       return GenericAuthResponse(
         error: true,
         success: false,
-        message: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
       );
     }
   }

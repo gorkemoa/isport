@@ -196,13 +196,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
         TextFormField(
           controller: _firstnameController,
           decoration: _buildInputDecoration(labelText: 'Ad'),
-          validator: (v) => v!.isEmpty ? 'Ad alanı zorunludur' : null,
+          validator: (v) => (v?.isEmpty ?? true) ? 'Ad alanı zorunludur' : null,
         ),
         const SizedBox(height: AppPaddings.card),
         TextFormField(
           controller: _lastnameController,
           decoration: _buildInputDecoration(labelText: 'Soyad'),
-          validator: (v) => v!.isEmpty ? 'Soyad alanı zorunludur' : null,
+          validator: (v) => (v?.isEmpty ?? true) ? 'Soyad alanı zorunludur' : null,
         ),
         const SizedBox(height: AppPaddings.card),
         TextFormField(
@@ -220,7 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           controller: _phoneController,
           keyboardType: TextInputType.phone,
           decoration: _buildInputDecoration(labelText: 'Telefon Numarası'),
-          validator: (v) => v!.isEmpty ? 'Telefon numarası zorunludur' : null,
+          validator: (v) => (v?.isEmpty ?? true) ? 'Telefon numarası zorunludur' : null,
         ),
         const SizedBox(height: AppPaddings.card),
         TextFormField(
@@ -235,7 +235,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
-          validator: (v) => v!.isEmpty ? 'Şifre alanı zorunludur' : null,
+          validator: (v) => (v?.isEmpty ?? true) ? 'Şifre alanı zorunludur' : null,
         ),
 
         // Kurumsal Alanlar
@@ -251,20 +251,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
           TextFormField(
             controller: _compNameController,
             decoration: _buildInputDecoration(labelText: 'Firma Adı'),
-            validator: (v) => isCompany && v!.isEmpty ? 'Firma adı zorunludur' : null,
+            validator: (v) => isCompany && (v?.isEmpty ?? true) ? 'Firma adı zorunludur' : null,
           ),
           const SizedBox(height: AppPaddings.card),
           TextFormField(
             controller: _compAddressController,
             decoration: _buildInputDecoration(labelText: 'Firma Adresi'),
-            validator: (v) => isCompany && v!.isEmpty ? 'Firma adresi zorunludur' : null,
+            validator: (v) => isCompany && (v?.isEmpty ?? true) ? 'Firma adresi zorunludur' : null,
           ),
           const SizedBox(height: AppPaddings.card),
           TextFormField(
             controller: _compTaxNumberController,
             keyboardType: TextInputType.number,
             decoration: _buildInputDecoration(labelText: 'TC / Vergi Numarası'),
-            validator: (v) => isCompany && v!.isEmpty ? 'TC/Vergi No zorunludur' : null,
+            validator: (v) => isCompany && (v?.isEmpty ?? true) ? 'TC/Vergi No zorunludur' : null,
           ),
           const SizedBox(height: AppPaddings.card),
           TextFormField(

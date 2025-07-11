@@ -50,28 +50,37 @@ class AuthData {
   }
 }
 
+
 /// Giriş yanıtı için model
 class LoginResponse {
   final bool error;
   final bool success;
   final AuthData? data;
-  final String? message410;
-
+  final bool isTokenError;
+  final String error_message;
   LoginResponse({
     required this.error,
     required this.success,
     this.data,
-    this.message410,
+    this.isTokenError = false,
+    required this.error_message,
   });
 
   /// JSON'dan oluşturma
-  factory LoginResponse.fromJson(Map<String, dynamic> json) {
+  factory LoginResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
     return LoginResponse(
       error: json['error'] ?? true,
       success: json['success'] ?? false,
       data: json['data'] != null ? AuthData.fromJson(json['data']) : null,
-      message410: json['410'],
-    );
+      isTokenError: isTokenError,
+      error_message: json['error_message'] ?? '',
+      );
+  }
+
+  /// Hata mesajını al
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    return error_message; 
   }
 }
 
@@ -213,19 +222,21 @@ class RegisterResponse {
   final bool success;
   final String? successMessage;
   final RegisterData? data;
-  final String? message410;
+  final bool isTokenError;
   final Map<String, dynamic>? validationErrors;
+  final String error_message;
 
   RegisterResponse({
     required this.error,
     required this.success,
     this.successMessage,
     this.data,
-    this.message410,
+    this.isTokenError = false,
     this.validationErrors,
+    required this.error_message,
   });
 
-  factory RegisterResponse.fromJson(Map<String, dynamic> json) {
+  factory RegisterResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
     // 'data' alanı bazen string '[]' olarak gelebilir.
     dynamic dataField = json['data'];
     RegisterData? parsedData;
@@ -245,8 +256,18 @@ class RegisterResponse {
       successMessage: json['success_message'],
       data: parsedData,
       validationErrors: validationData,
-      message410: json['410'],
+      isTokenError: isTokenError,
+      error_message: json['error_message'] ?? '',
     );
+  }
+
+  /// Hata mesajını al
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (validationErrors != null && validationErrors!.isNotEmpty) {
+       return validationErrors!.values.first.toString();
+    }
+    return error_message;
   }
 }
 
@@ -280,24 +301,33 @@ class ForgotPasswordResponse {
   final bool success;
   final String? message;
   final ForgotPasswordData? data;
-  final String? message410;
+  final String error_message;
+  final bool isTokenError;
 
   ForgotPasswordResponse({
     required this.error,
     required this.success,
     this.message,
     this.data,
-    this.message410,
+    this.isTokenError = false,
+    required this.error_message,
   });
 
-  factory ForgotPasswordResponse.fromJson(Map<String, dynamic> json) {
+  factory ForgotPasswordResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
     return ForgotPasswordResponse(
       error: json['error'] ?? true,
       success: json['success'] ?? false,
       message: json['message'] ?? json['success_message'],
       data: json['data'] != null ? ForgotPasswordData.fromJson(json['data']) : null,
-      message410: json['410'],
+      error_message: json['error_message'] ?? '',
+      isTokenError: isTokenError,
     );
+  }
+
+  /// Hata mesajını al
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    return error_message;
   }
 }
 
@@ -337,7 +367,8 @@ class GenericAuthResponse {
   final bool error;
   final bool success;
   final String? message;
-  final String? message410;
+  final String error_message;
+  final bool isTokenError;
   final Map<String, dynamic>? validationErrors;
 
 
@@ -345,11 +376,12 @@ class GenericAuthResponse {
     required this.error,
     required this.success,
     this.message,
-    this.message410,
+    this.isTokenError = false,
+    required this.error_message,
     this.validationErrors,
   });
 
-  factory GenericAuthResponse.fromJson(Map<String, dynamic> json) {
+  factory GenericAuthResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
      dynamic dataField = json['data'];
     Map<String, dynamic>? validationData;
 
@@ -364,7 +396,17 @@ class GenericAuthResponse {
       success: json['success'] ?? false,
       message: json['message'] ?? json['success_message'],
       validationErrors: validationData,
-      message410: json['410'],
+      error_message: json['error_message'] ?? '',
+      isTokenError: isTokenError,
     );
+  }
+
+  /// Hata mesajını al
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (validationErrors != null && validationErrors!.isNotEmpty) {
+      return validationErrors!.values.first.toString();
+    }
+    return error_message;
   }
 }

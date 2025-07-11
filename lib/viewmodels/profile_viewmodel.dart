@@ -1,56 +1,74 @@
 import 'package:flutter/material.dart';
-
-import '../models/user_model.dart';
-import '../services/auth_services.dart';
-import '../services/user_service.dart';
-import '../services/logger_service.dart';
+import 'package:isport/models/auth_models.dart';
+import 'package:isport/models/user_model.dart';
+import 'package:isport/services/auth_services.dart';
+import 'package:isport/services/logger_service.dart';
+import 'package:isport/services/user_service.dart';
 
 class ProfileViewModel extends ChangeNotifier {
-  final UserService _userService = UserService();
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
 
+  UserModel? _user;
   UserResponse? _userResponse;
-  UserResponse? get userResponse => _userResponse;
-
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
   String? _errorMessage;
-  String? get errorMessage => _errorMessage;
-
+  bool _isLoading = false;
   bool _needsLogout = false;
+
+  final TextEditingController _firstnameController = TextEditingController();
+  final TextEditingController _lastnameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _currentPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  UserModel? get user => _user;
+  UserResponse? get userResponse => _userResponse;
+  String? get errorMessage => _errorMessage;
+  bool get isLoading => _isLoading;
   bool get needsLogout => _needsLogout;
 
+  TextEditingController get firstnameController => _firstnameController;
+  TextEditingController get lastnameController => _lastnameController;
+  TextEditingController get emailController => _emailController;
+  TextEditingController get phoneController => _phoneController;
+  TextEditingController get currentPasswordController => _currentPasswordController;
+  TextEditingController get newPasswordController => _newPasswordController;
+  TextEditingController get confirmPasswordController => _confirmPasswordController;
+
   ProfileViewModel() {
-    fetchUser();
+    loadUserData();
   }
 
-  Future<void> fetchUser() async {
+  Future<void> loadUserData() async {
     _isLoading = true;
     _errorMessage = null;
-    _needsLogout = false;
     notifyListeners();
 
     try {
-      final String? token = await _authService.loadToken();
-      if (token == null || token.isEmpty) {
-        throw Exception('Giriş yapmış bir kullanıcı bulunamadı.');
+      final token = await _authService.loadToken();
+      if (token == null) {
+        _needsLogout = true;
+        _isLoading = false;
+        notifyListeners();
+        return;
       }
       
-      _userResponse = await _userService.getUser(userToken: token);
+      final response = await _userService.getUser(userToken: token);
+      _userResponse = response;
 
-      if (_userResponse?.error ?? true) {
-        _errorMessage = _userResponse?.message410 ?? 'Kullanıcı bilgileri alınamadı.';
-        
-        // Eğer hata mesajı token ile ilgiliyse logout gerekli
-        if (_errorMessage?.contains('Oturum süreniz dolmuş') ?? false) {
+      if (response.success && response.data != null) {
+        _user = response.data!.user;
+        _setUserFieldsFromModel();
+      } else {
+        _errorMessage = response.displayMessage ?? 'Kullanıcı verileri alınamadı.';
+        if (response.isTokenError) {
           _needsLogout = true;
-          await logout();
         }
       }
-
     } catch (e, s) {
-      logger.e('Profil verisi getirilirken hata', error: e, stackTrace: s);
+      logger.e('Kullanıcı verileri yüklenirken hata', error: e, stackTrace: s);
       _errorMessage = e.toString();
     } finally {
       _isLoading = false;
@@ -58,56 +76,41 @@ class ProfileViewModel extends ChangeNotifier {
     }
   }
 
-  /// Kullanıcı bilgilerini günceller.
-  /// Başarılı olursa true döner ve profil verisini yeniler.
+  Future<void> fetchUser() async {
+    await loadUserData();
+  }
+
   Future<bool> updateUser(UpdateUserRequest request) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      // Token'ı yeniden alarak güncelliğinden emin olalım
-      final String? token = await _authService.loadToken();
-      if (token == null || token.isEmpty) {
-        throw Exception('Giriş yapmış bir kullanıcı bulunamadı.');
-      }
-      // Request içindeki token'ı en güncel haliyle değiştir.
-      final updatedRequest = UpdateUserRequest(
-        userToken: token,
-        userFirstname: request.userFirstname,
-        userLastname: request.userLastname,
-        userEmail: request.userEmail,
-        userPhone: request.userPhone,
-        userBirthday: request.userBirthday,
-        userGender: request.userGender,
-        profilePhoto: request.profilePhoto,
-      );
+      final response = await _userService.updateUser(request);
 
-
-      final response = await _userService.updateUser(updatedRequest);
+      _isLoading = false;
 
       if (response.success) {
-        // Başarılı güncellemeden sonra profil verilerini yeniden çek
-        await fetchUser();
-        // isLoading zaten fetchUser içinde false'a çekiliyor.
+        await loadUserData(); // Refresh data
+        notifyListeners();
         return true;
       } else {
-        _errorMessage = response.message ?? 'Kullanıcı bilgileri güncellenemedi.';
-        _isLoading = false;
+        _errorMessage = response.displayMessage ?? 'Profil güncellenemedi.';
+        if (response.isTokenError) {
+          _needsLogout = true;
+        }
         notifyListeners();
         return false;
       }
     } catch (e, s) {
-      logger.e('Kullanıcı güncellenirken hata', error: e, stackTrace: s);
-      _errorMessage = e.toString();
+      logger.e('Profil güncellenirken hata', error: e, stackTrace: s);
+      _errorMessage = 'Bir hata oluştu: $e';
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  /// Kullanıcı şifresini günceller.
-  /// Başarılı olursa true döner.
   Future<bool> updatePassword(UpdatePasswordRequest request) async {
     _isLoading = true;
     _errorMessage = null;
@@ -115,44 +118,60 @@ class ProfileViewModel extends ChangeNotifier {
 
     try {
       final response = await _userService.updatePassword(request);
+      _isLoading = false;
 
       if (response.success) {
-        _isLoading = false;
+        _currentPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
         notifyListeners();
         return true;
       } else {
-        String errorMessage = response.message ?? 'Şifre güncellenemedi.';
-        if (response.validationErrors != null && response.validationErrors!.isNotEmpty) {
-           errorMessage = response.validationErrors!.values.first.toString();
+        _errorMessage = response.displayMessage ?? 'Şifre değiştirilemedi.';
+        if (response.isTokenError) {
+          _needsLogout = true;
         }
-        _errorMessage = errorMessage;
-        _isLoading = false;
         notifyListeners();
         return false;
       }
     } catch (e, s) {
-      logger.e('Şifre güncellenirken hata', error: e, stackTrace: s);
-      _errorMessage = e.toString();
+      logger.e('Şifre değiştirilirken hata', error: e, stackTrace: s);
+      _errorMessage = 'Bir hata oluştu: $e';
       _isLoading = false;
       notifyListeners();
       return false;
     }
   }
 
-  /// Hata mesajını temizler
+  void _setUserFieldsFromModel() {
+    if (_user != null) {
+      _firstnameController.text = _user!.userFirstname;
+      _lastnameController.text = _user!.userLastname;
+      _emailController.text = _user!.userEmail;
+      _phoneController.text = _user!.userPhone;
+    }
+  }
+
+  Future<void> logout() async {
+    await _authService.logout();
+    _needsLogout = true;
+    notifyListeners();
+  }
+
   void clearError() {
     _errorMessage = null;
     notifyListeners();
   }
 
-  Future<void> logout() async {
-    try {
-      await _authService.logout();
-      _userResponse = null;
-      _needsLogout = true;
-      notifyListeners();
-    } catch (e, s) {
-      logger.e('Logout işlemi sırasında hata', error: e, stackTrace: s);
-    }
+  @override
+  void dispose() {
+    _firstnameController.dispose();
+    _lastnameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 } 

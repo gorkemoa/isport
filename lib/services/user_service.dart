@@ -1,124 +1,52 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
-
 import '../models/user_model.dart';
 import '../models/auth_models.dart';
-import '../models/company_detail_model.dart';
 import 'auth_services.dart';
 import 'logger_service.dart';
 
-/// Kullanıcı bilgileri ile ilgili servisler
+/// Kullanıcı verileri ve profili ile ilgili servisler
 class UserService {
-  // API sabitleri - AuthService ile aynı base URL
   static const String _baseUrl = 'https://api.rivorya.com/isport';
-  static const String _userEndpoint = '/service/user/id';
-  static const String _updateUserEndpoint = '/service/user/update/account';
-  static const String _updatePasswordEndpoint = '/service/user/update/password';
-  static const String _companyDetailEndpoint = '/service/user/company/'; // {id}/companyDetail
+  static const String _getUserEndpoint = '/service/user/account/getUser';
+  static const String _updateUserEndpoint = '/service/user/account/userUpdate';
+  static const String _updatePasswordEndpoint = '/service/user/account/passwordUpdate';
 
-  /// Kullanıcı bilgilerini getirir
-  Future<UserResponse> getUser({required String? userToken}) async {
-    if (userToken == null || userToken.isEmpty) {
-      return UserResponse(
-        error: true,
-        success: false,
-        message410: 'Kullanıcı girişi yapılmamış.',
-      );
-    }
-
+  /// Kullanıcı verilerini API'den alır.
+  Future<UserResponse> getUser({required String userToken}) async {
     try {
-      final url = Uri.parse('$_baseUrl$_userEndpoint');
+      final url = Uri.parse('$_baseUrl$_getUserEndpoint');
       final headers = AuthService.getHeaders(userToken: userToken);
-      final body = jsonEncode({
-        'userToken': userToken,
-        'platform': Platform.isIOS ? 'ios' : 'android',
-        'version': '1.0.0',
-      });
+      final body = jsonEncode({'userToken': userToken});
 
-      logger.d('Kullanıcı Bilgisi İsteği Gövdesi: $body');
+      final response = await http.post(url, headers: headers, body: body);
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: body,
-      );
+      if (response.statusCode == 403) {
+        return UserResponse.fromJson(jsonData, isTokenError: true);
+      }
 
-      logger.d('Kullanıcı Bilgisi Yanıtı: ${response.statusCode} - ${response.body}');
-
-      // Status code kontrolü mevcut mimariye uygun
-      if (response.statusCode == 410) {
-        // 410 = Başarılı
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        return UserResponse.fromJson(jsonData);
-      } else if (response.statusCode == 403) {
-        // 403 = Token geçersiz, logout gerekli
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        final userResponse = UserResponse.fromJson(jsonData);
-        // Logout işlemini tetiklemek için özel bir flag ekleyebiliriz
-        return UserResponse(
-          error: true,
-          success: false,
-          message410: 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.',
-        );
-      } else if (response.statusCode == 401) {
-        // 401 = Unauthorized
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        return UserResponse.fromJson(jsonData);
-      } else if (response.statusCode == 404) {
-        // 404 = Not Found
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-        return UserResponse.fromJson(jsonData);
-      } else if (response.statusCode == 200) {
-        // 200 = Hata mesajı (mevcut mimariye göre)
-        final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 410 || response.statusCode == 200 || response.statusCode == 417) {
         return UserResponse.fromJson(jsonData);
       } else {
         return UserResponse(
           error: true,
           success: false,
-          message410: 'API Hatası: ${response.statusCode}',
+          error_message: 'API Hatası: ${response.statusCode}',
         );
       }
     } catch (e, s) {
-      logger.e('Kullanıcı bilgileri getirilirken hata', error: e, stackTrace: s);
+      logger.e('Kullanıcı verisi alınırken hata', error: e, stackTrace: s);
       return UserResponse(
         error: true,
         success: false,
-        message410: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
       );
     }
   }
 
-  /// Şirket detaylarını ve ilanlarını getirir
-  Future<CompanyDetailResponse> getCompanyDetail({required int companyId}) async {
-    try {
-      final url = Uri.parse('$_baseUrl$_companyDetailEndpoint$companyId/companyDetail');
-      final headers = AuthService.getHeaders(); // Token gerektirmeyebilir, header'ı boş bırakabiliriz
-      
-      logger.d('Şirket Detay İsteği: $url');
-
-      final response = await http.get(
-        url,
-        headers: headers,
-      );
-
-      logger.d('Şirket Detay Yanıtı: ${response.statusCode} - ${response.body}');
-      
-      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-      return CompanyDetailResponse.fromJson(jsonData);
-
-    } catch (e, s) {
-      logger.e('Şirket detayı getirilirken hata', error: e, stackTrace: s);
-      return CompanyDetailResponse(
-        error: true,
-        success: false,
-        message: 'Ağ Hatası: $e',
-      );
-    }
-  }
-
-  /// Kullanıcı bilgilerini günceller
+    
+  /// Kullanıcı bilgilerini günceller.
   Future<GenericAuthResponse> updateUser(UpdateUserRequest request) async {
     try {
       final url = Uri.parse('$_baseUrl$_updateUserEndpoint');
@@ -127,45 +55,46 @@ class UserService {
 
       logger.d('Kullanıcı Güncelleme İsteği: $body');
 
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: body,
-      );
-
-      logger.d('Kullanıcı Güncelleme Yanıtı: ${response.statusCode} - ${response.body}');
-      
+      final response = await http.post(url, headers: headers, body: body);
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
-      return GenericAuthResponse.fromJson(jsonData);
+      
+      logger.d('Kullanıcı Güncelleme Yanıtı: ${response.statusCode} - ${response.body}');
 
+      if (response.statusCode == 403) {
+        return GenericAuthResponse.fromJson(jsonData, isTokenError: true);
+      }
+
+      return GenericAuthResponse.fromJson(jsonData);
+      
     } catch (e, s) {
       logger.e('Kullanıcı güncellenirken hata', error: e, stackTrace: s);
       return GenericAuthResponse(
         error: true,
         success: false,
-        message: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
+        validationErrors: const {},
       );
     }
   }
 
-  /// Kullanıcı şifresini günceller
+  /// Kullanıcı şifresini günceller.
   Future<GenericAuthResponse> updatePassword(UpdatePasswordRequest request) async {
-    try {
+     try {
       final url = Uri.parse('$_baseUrl$_updatePasswordEndpoint');
       final headers = AuthService.getHeaders(userToken: request.userToken);
       final body = jsonEncode(request.toJson());
 
-      logger.d('Şifre Güncelleme İsteği gönderiliyor.');
+      logger.d('Şifre Güncelleme İsteği: $body');
 
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: body,
-      );
+      final response = await http.post(url, headers: headers, body: body);
+      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
       logger.d('Şifre Güncelleme Yanıtı: ${response.statusCode} - ${response.body}');
 
-      final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 403) {
+        return GenericAuthResponse.fromJson(jsonData, isTokenError: true);
+      }
+
       return GenericAuthResponse.fromJson(jsonData);
 
     } catch (e, s) {
@@ -174,6 +103,7 @@ class UserService {
         error: true,
         success: false,
         message: 'Ağ Hatası: $e',
+        error_message: 'Ağ Hatası: $e',
       );
     }
   }

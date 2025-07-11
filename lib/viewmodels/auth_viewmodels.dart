@@ -72,8 +72,12 @@ class AuthViewModel extends ChangeNotifier {
         return true;
       } else {
         // Başarısız giriş
-        _setError(loginResponse.message410 ?? 'Giriş başarısız');
-        _setAuthStatus(AuthStatus.error);
+        _setError(loginResponse.displayMessage ?? 'Giriş başarısız');
+        if (loginResponse.isTokenError) {
+          _setAuthStatus(AuthStatus.unauthenticated);
+        } else {
+          _setAuthStatus(AuthStatus.error);
+        }
         _setLoading(false);
         return false;
       }
@@ -98,15 +102,12 @@ class AuthViewModel extends ChangeNotifier {
         _setAuthStatus(AuthStatus.unauthenticated); // Kayıt sonrası giriş yapılmamış state'e geç
       } else {
         // Hatalı kayıt
-        String errorMessage = 'Kayıt başarısız oldu.';
-        if (response.validationErrors != null && response.validationErrors!.isNotEmpty) {
-           // İlk validation hatasını göster
-           errorMessage = response.validationErrors!.values.first.toString();
-        } else if (response.successMessage != null && response.successMessage!.isNotEmpty) {
-          errorMessage = response.successMessage!;
+        _setError(response.displayMessage ?? 'Kayıt başarısız oldu.');
+        if (response.isTokenError) {
+          _setAuthStatus(AuthStatus.unauthenticated);
+        } else {
+          _setAuthStatus(AuthStatus.error);
         }
-        _setError(errorMessage);
-        _setAuthStatus(AuthStatus.error);
       }
       _setLoading(false);
       return response;
@@ -115,7 +116,7 @@ class AuthViewModel extends ChangeNotifier {
       _setError('Kayıt yapılırken bir hata oluştu: $e');
       _setAuthStatus(AuthStatus.error);
       _setLoading(false);
-      return RegisterResponse(error: true, success: false, message410: e.toString());
+      return RegisterResponse(error: true, success: false, error_message: e.toString());
     }
   }
 
@@ -131,7 +132,7 @@ class AuthViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        _setError(response.message ?? 'Şifre sıfırlama isteği gönderilemedi.');
+        _setError(response.displayMessage ?? 'Şifre sıfırlama isteği gönderilemedi.');
         _setLoading(false);
         return false;
       }
@@ -158,7 +159,7 @@ class AuthViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        _setError(response.message ?? 'Kod doğrulanamadı.');
+        _setError(response.displayMessage ?? 'Kod doğrulanamadı.');
         _setLoading(false);
         return false;
       }
@@ -185,7 +186,7 @@ class AuthViewModel extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        _setError(response.message ?? 'Şifre sıfırlanamadı.');
+        _setError(response.displayMessage ?? 'Şifre sıfırlanamadı.');
         _setLoading(false);
         return false;
       }

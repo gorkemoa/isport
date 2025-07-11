@@ -144,22 +144,31 @@ class UserResponse {
   final bool error;
   final bool success;
   final UserData? data;
-  final String? message410;
+  final String error_message;
+  final bool isTokenError;
 
   UserResponse({
     required this.error,
     required this.success,
     this.data,
-    this.message410,
+    required this.error_message,
+    this.isTokenError = false,
   });
 
-  factory UserResponse.fromJson(Map<String, dynamic> json) {
+  factory UserResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
     return UserResponse(
       error: json['error'] ?? true,
       success: json['success'] ?? false,
       data: json['data'] != null ? UserData.fromJson(json['data']) : null,
-      message410: json['410'],
+      error_message: json['error_message'] ?? '',
+      isTokenError: isTokenError,
     );
+  }
+
+  /// Hata mesajını al
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+     return error_message;
   }
 }
 
