@@ -473,10 +473,6 @@ class JobDetailBottomSheet extends StatelessWidget {
   Widget _buildErrorState(String errorMessage, JobViewModel jobVM) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
