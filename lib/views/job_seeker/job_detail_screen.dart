@@ -349,6 +349,8 @@ class JobDetailBottomSheet extends StatelessWidget {
             fontWeight: FontWeight.w500,
             color: const Color(0xFF1F2937),
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -356,9 +358,6 @@ class JobDetailBottomSheet extends StatelessWidget {
 
   Widget _buildShortDescription(JobDetailModel job) {
     final description = job.jobDesc.isNotEmpty ? job.jobDesc : 'İş açıklaması mevcut değil.';
-    final shortDescription = description.length > 200 
-        ? '${description.substring(0, 200)}...' 
-        : description;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -375,12 +374,14 @@ class JobDetailBottomSheet extends StatelessWidget {
         const SizedBox(height: 8),
         
         Text(
-          shortDescription,
+          description,
           style: GoogleFonts.inter(
             fontSize: 13,
             color: const Color(0xFF4B5563),
             height: 1.5,
           ),
+          maxLines: 5,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -442,6 +443,7 @@ class JobDetailBottomSheet extends StatelessWidget {
             ),
             textAlign: TextAlign.end,
             overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],
@@ -745,7 +747,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 20, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -866,14 +868,18 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                       color: Colors.grey[600],
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      job.formattedLocation,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.grey[700],
+                    Expanded(
+                      child: Text(
+                        job.formattedLocation,
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       job.showDate,
                       style: GoogleFonts.inter(
@@ -987,6 +993,8 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                               fontWeight: FontWeight.w600,
                               color: const Color(0xFF1F2937),
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -1108,6 +1116,7 @@ class _JobDetailScreenState extends State<JobDetailScreen>
 
   Widget _buildInfoRow(String title, String value, IconData icon) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
@@ -1122,8 +1131,8 @@ class _JobDetailScreenState extends State<JobDetailScreen>
             color: Colors.grey[600],
           ),
         ),
-        const Spacer(),
-        Flexible(
+        const SizedBox(width: 16),
+        Expanded(
           child: Text(
             value,
             style: GoogleFonts.inter(
@@ -1311,6 +1320,8 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xFF1F2937),
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -1319,6 +1330,8 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                                   fontSize: 11,
                                   color: Colors.grey[600],
                                 ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
                             ],
                           ),
