@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/logger_service.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFFFCD401); 
+  static const Color primary = Color.fromARGB(255, 29, 157, 131); 
   static const Color primaryDark = Color(0xFFFCD401);
   static const Color accent = Color(0xFF00C4B4); // A teal/green accent
   static const Color textTitle = Color(0xFF212121);

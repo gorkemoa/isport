@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isport/utils/app_constants.dart';
 import 'package:isport/views/job_seeker/job_seeker_home_screen.dart';
 import 'package:isport/views/employer/employer_home_screen.dart';
+import 'package:isport/views/job_seeker/job_seeker_main_page.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
 import 'register_screen.dart';
@@ -345,7 +346,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           // İş arayan kullanıcı - Job Seeker Home Screen'e yönlendir
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const JobSeekerHomeScreen()),
+            MaterialPageRoute(builder: (context) => const JobSeekerMainPage()),
           );
         }
       }

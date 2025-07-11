@@ -22,6 +22,7 @@ class AuthService {
   static const String _userDataKey = 'user_data';
   static const String _tokenKey = 'auth_token';
   static const String _userEmailKey = 'user_email';
+  static const String _userTokenKeyLegacy = 'userToken';
 
   /// Basic Auth header'ını oluşturur
   static String _getBasicAuthHeader() {
@@ -251,6 +252,8 @@ class AuthService {
       
       await prefs.setString(_userDataKey, jsonEncode(user.toJson()));
       await prefs.setString(_tokenKey, authData.token);
+      // Geriye dönük uyumluluk için legacy anahtarı da doldur
+      await prefs.setString(_userTokenKeyLegacy, authData.token);
       await prefs.setString(_userEmailKey, userEmail);
     } catch (e, s) {
       logger.error('Kullanıcı verileri kaydedilirken hata', error: e, stackTrace: s);
@@ -292,7 +295,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_userDataKey);
       await prefs.remove(_tokenKey);
-      await prefs.remove(_userEmailKey);
+      await prefs.remove(_userTokenKeyLegacy);
     } catch (e, s) {
       logger.error('Çıkış yapılırken hata', error: e, stackTrace: s);
     }

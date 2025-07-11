@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:isport/utils/app_constants.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:shimmer/shimmer.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../login_screen.dart';
 import '../../viewmodels/profile_viewmodel.dart';
 import '../../models/user_model.dart';
+import 'job_listing_screen.dart';
 
 class JobSeekerHomeScreen extends StatefulWidget {
   const JobSeekerHomeScreen({super.key});
@@ -30,26 +32,25 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: Consumer<ProfileViewModel>(
         builder: (context, profileVM, child) {
           return CustomScrollView(
             slivers: [
               _buildAppBar(profileVM),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 130),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     if (profileVM.isLoading) 
                       _buildLoadingShimmer()
                     else if (profileVM.user != null) ...[
                       _buildWelcomeCard(profileVM.user!),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       _buildQuickActions(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       _buildStatsSection(profileVM.user!),
-                      const SizedBox(height: 24),
-                      _buildRecentActivities(),
+                      const SizedBox(height: 16),
                     ] else
                       _buildErrorState(profileVM.errorMessage),
                   ]),
@@ -59,13 +60,12 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
           );
         },
       ),
-      floatingActionButton: _buildLogoutButton(),
     );
   }
 
   Widget _buildAppBar(ProfileViewModel profileVM) {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 100,
       floating: false,
       pinned: true,
       elevation: 0,
@@ -81,34 +81,34 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Color(0xFF667EEA),
-                Color(0xFF764BA2),
+                AppColors.primary,
+                Color(0xFF6366F1),
               ],
             ),
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'İş Arayan Paneli',
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
-                  ).animate().fadeIn(duration: 600.ms).slideX(),
-                  const SizedBox(height: 4),
+                  ).animate().fadeIn(duration: 500.ms).slideX(),
+                  const SizedBox(height: 2),
                   Text(
                     'Kariyerinizi şekillendirin',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      color: Colors.white70,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.9),
                     ),
-                  ).animate().fadeIn(delay: 200.ms, duration: 600.ms).slideX(),
+                  ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideX(),
                 ],
               ),
             ),
@@ -121,39 +121,40 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
   Widget _buildWelcomeCard(UserModel user) {
     return AnimationConfiguration.staggeredList(
       position: 0,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
       child: SlideAnimation(
-        verticalOffset: 50.0,
+        verticalOffset: 30.0,
         child: FadeInAnimation(
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
+              border: Border.all(color: Colors.grey.withOpacity(0.15)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 64,
-                  height: 64,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+                      colors: [AppColors.primary, Color(0xFF6366F1)],
                     ),
-                    border: Border.all(color: Colors.white, width: 3),
+                    border: Border.all(color: Colors.white, width: 2),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF667EEA).withOpacity(0.3),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
+                        color:   (AppColors.primary).withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -162,46 +163,46 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
                           child: CachedNetworkImage(
                             imageUrl: user.profilePhoto,
                             fit: BoxFit.cover,
-                            placeholder: (context, url) => const CircularProgressIndicator(),
+                            placeholder: (context, url) => const CircularProgressIndicator(strokeWidth: 2),
                             errorWidget: (context, url, error) => const Icon(
                               Icons.person,
                               color: Colors.white,
-                              size: 32,
+                              size: 24,
                             ),
                           ),
                         )
                       : const Icon(
                           Icons.person,
                           color: Colors.white,
-                          size: 32,
+                          size: 24,
                         ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Hoş Geldiniz',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
                           color: Colors.grey[600],
                         ),
                       ),
                       Text(
                         user.userFullname,
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1E293B),
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF374151),
                         ),
                       ),
                       if (user.isComp && user.company != null)
                         Text(
                           user.company!.compName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: const Color(0xFF667EEA),
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            color:   (AppColors.primary),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -209,21 +210,21 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: user.userStatus == 'activated' 
-                        ? const Color(0xFF10B981).withOpacity(0.1)
+                        ? const Color(0xFF059669).withOpacity(0.1)
                         : const Color(0xFFF59E0B).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     user.userStatus == 'activated' ? 'Aktif' : 'Onay Bekliyor',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
                       color: user.userStatus == 'activated' 
-                          ? const Color(0xFF10B981)
-                          : const Color(0xFFF59E0B),
+                          ? const Color(0xFF059669)
+                          : const Color(0xFFD97706),
                     ),
                   ),
                 ),
@@ -237,10 +238,10 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
 
   Widget _buildQuickActions() {
     final actions = [
-      {'icon': Icons.search, 'title': 'İş Ara', 'color': const Color(0xFF667EEA)},
-      {'icon': Icons.work, 'title': 'Başvurularım', 'color': const Color(0xFF10B981)},
-      {'icon': Icons.person, 'title': 'Profil', 'color': const Color(0xFFF59E0B)},
-      {'icon': Icons.message, 'title': 'Mesajlar', 'color': const Color(0xFFEF4444)},
+      {'icon': Icons.search, 'title': 'İş Ara', 'color':   (AppColors.primary)},
+      {'icon': Icons.work_outline, 'title': 'Başvurularım', 'color': const Color(0xFF059669)},
+      {'icon': Icons.person_outline, 'title': 'Profil', 'color': const Color(0xFFD97706)},
+      {'icon': Icons.message_outlined, 'title': 'Mesajlar', 'color': const Color(0xFFDC2626)},
     ];
 
     return Column(
@@ -248,73 +249,91 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
       children: [
         Text(
           'Hızlı İşlemler',
-          style: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF1E293B),
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF374151),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
+          padding: const EdgeInsets.all(0),
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+            childAspectRatio: 1.3,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
           itemCount: actions.length,
           itemBuilder: (context, index) {
             final action = actions[index];
             return AnimationConfiguration.staggeredGrid(
               position: index,
-              duration: const Duration(milliseconds: 600),
+              duration: const Duration(milliseconds: 500),
               columnCount: 2,
               child: SlideAnimation(
-                verticalOffset: 50.0,
+                verticalOffset: 30.0,
                 child: FadeInAnimation(
                   child: GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
-                      // Navigate to respective screen
+                      
+                      switch (action['title']) {
+                        case 'İş Ara':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const JobListingScreen(),
+                            ),
+                          );
+                          break;
+                        case 'Başvurularım':
+                          break;
+                        case 'Profil':
+                          break;
+                        case 'Mesajlar':
+                          break;
+                      }
                     },
                     child: Container(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withOpacity(0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
+                         border: Border.all(color: Colors.grey.withOpacity(0.15)),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            width: 48,
-                            height: 48,
+                            width: 40,
+                            height: 40,
                             decoration: BoxDecoration(
                               color: (action['color'] as Color).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               action['icon'] as IconData,
                               color: action['color'] as Color,
-                              size: 24,
+                              size: 20,
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 8),
                           Text(
                             action['title'] as String,
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1E293B),
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: const Color(0xFF374151),
                             ),
                           ),
                         ],
@@ -333,46 +352,42 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
   Widget _buildStatsSection(UserModel user) {
     return AnimationConfiguration.staggeredList(
       position: 2,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 500),
       child: SlideAnimation(
-        verticalOffset: 50.0,
+        verticalOffset: 30.0,
         child: FadeInAnimation(
           child: Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ],
+              border: Border.all(color: Colors.grey.withOpacity(0.15)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'İstatistikler',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E293B),
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF374151),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    Expanded(
-                      child: _buildStatItem('Rank', user.userRank, const Color(0xFF667EEA)),
-                    ),
-                    Expanded(
-                      child: _buildStatItem('Başvuru', '12', const Color(0xFF10B981)),
-                    ),
-                    Expanded(
-                      child: _buildStatItem('Görüntüleme', '45', const Color(0xFFF59E0B)),
-                    ),
+                    _buildStatItem('Rank', user.userRank,   (AppColors.primary)),
+                    _buildStatItem('Başvuru', '12', const Color(0xFF059669)),
+                    _buildStatItem('Görüntüleme', '45', const Color(0xFFD97706)),
                   ],
                 ),
               ],
@@ -387,18 +402,18 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
     return Column(
       children: [
         Container(
-          width: 60,
-          height: 60,
+          width: 52,
+          height: 52,
           decoration: BoxDecoration(
             color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Center(
             child: Text(
               value,
-              style: GoogleFonts.poppins(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: color,
               ),
             ),
@@ -407,8 +422,8 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
         const SizedBox(height: 8),
         Text(
           title,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
+          style: GoogleFonts.inter(
+            fontSize: 11,
             color: Colors.grey[600],
           ),
         ),
@@ -416,128 +431,21 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
     );
   }
 
-  Widget _buildRecentActivities() {
-    return AnimationConfiguration.staggeredList(
-      position: 3,
-      duration: const Duration(milliseconds: 600),
-      child: SlideAnimation(
-        verticalOffset: 50.0,
-        child: FadeInAnimation(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Son Aktiviteler',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF1E293B),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildActivityItem(
-                  'Yeni iş ilanı',
-                  'Frontend Developer pozisyonu',
-                  '2 saat önce',
-                  Icons.work,
-                  const Color(0xFF667EEA),
-                ),
-                const Divider(height: 24),
-                _buildActivityItem(
-                  'Profil görüntüleme',
-                  'ABC Şirketi profilinizi görüntüledi',
-                  '5 saat önce',
-                  Icons.visibility,
-                  const Color(0xFF10B981),
-                ),
-                const Divider(height: 24),
-                _buildActivityItem(
-                  'Başvuru durumu',
-                  'XYZ şirketinden yanıt bekleniyor',
-                  '1 gün önce',
-                  Icons.hourglass_empty,
-                  const Color(0xFFF59E0B),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildActivityItem(String title, String subtitle, String time, IconData icon, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1E293B),
-                ),
-              ),
-              Text(
-                subtitle,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          time,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            color: Colors.grey[500],
-          ),
-        ),
-      ],
-    );
-  }
-
+  
   Widget _buildLoadingShimmer() {
     return Column(
       children: List.generate(3, (index) => 
         Container(
-          margin: const EdgeInsets.only(bottom: 16),
+          margin: const EdgeInsets.only(bottom: 12),
           child: Shimmer.fromColors(
             baseColor: Colors.grey[300]!,
             highlightColor: Colors.grey[100]!,
             child: Container(
-              height: 120,
+              height: 100,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
@@ -548,125 +456,63 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
 
   Widget _buildErrorState(String? errorMessage) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
       ),
       child: Column(
         children: [
           Icon(
             Icons.error_outline,
-            size: 64,
+            size: 48,
             color: Colors.grey[400],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             'Bir hata oluştu',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1E293B),
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF374151),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             errorMessage ?? 'Bilinmeyen hata',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
+            style: GoogleFonts.inter(
+              fontSize: 12,
               color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ElevatedButton(
             onPressed: () {
               context.read<ProfileViewModel>().loadUserProfile();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF667EEA),
+              backgroundColor:   (AppColors.primary),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(6),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
             child: Text(
               'Tekrar Dene',
-              style: GoogleFonts.poppins(
+              style: GoogleFonts.inter(
                 color: Colors.white,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: FloatingActionButton.extended(
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          _showLogoutDialog();
-        },
-        backgroundColor: const Color(0xFFEF4444),
-        elevation: 8,
-        icon: const Icon(Icons.logout, color: Colors.white),
-        label: Text(
-          'Çıkış Yap',
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ).animate().scale(delay: 1000.ms, duration: 400.ms),
-    );
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'Çıkış Yap',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Uygulamadan çıkmak istediğinizden emin misiniz?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'İptal',
-              style: GoogleFonts.poppins(color: Colors.grey[600]),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: Text(
-              'Çıkış Yap',
-              style: GoogleFonts.poppins(color: Colors.white),
             ),
           ),
         ],
