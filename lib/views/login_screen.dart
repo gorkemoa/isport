@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:isport/utils/app_constants.dart';
-import 'package:isport/views/home_screen.dart';
+import 'package:isport/views/job_seeker/job_seeker_home_screen.dart';
+import 'package:isport/views/employer/employer_home_screen.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/auth_viewmodels.dart';
 import 'register_screen.dart';
-import 'package:isport/views/forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -139,12 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             alignment: Alignment.centerRight,
                             child: TextButton(
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const ForgotPasswordScreen()),
-                                );
+                            
                               },
                               child: const Text(
                                 'Şifremi Unuttum',
@@ -253,6 +248,44 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 32),
+
+                    // Form'un altına hızlı giriş butonlarını ekle
+                    const SizedBox(height: AppPaddings.card),
+
+                    // Hızlı Giriş Butonları
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _emailController.text = 'gorkemoa35@gmail.com';
+                          _passwordController.text = '123a';
+                          _handleLogin(Provider.of<AuthViewModel>(context, listen: false));
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Hızlı Giriş: Gorkem'),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppPaddings.item),
+
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _emailController.text = 'ridvan.dasdelen@gmail.com';
+                          _passwordController.text = '123a';
+                          _handleLogin(Provider.of<AuthViewModel>(context, listen: false));
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Hızlı Giriş: Ridvan'),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -305,14 +338,14 @@ class _LoginScreenState extends State<LoginScreen> {
         // Kullanıcı tipine göre yönlendirme yap
         final user = authViewModel.currentUser;
         if (user != null && user.isComp) {
-          // Kurumsal kullanıcı - Corporate Main Screen'e yönlendir
+          // Kurumsal kullanıcı - Employer Home Screen'e yönlendir
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const EmployerHomeScreen()),
           );
         } else {
-          // İş arayan kullanıcı - Main Screen'e yönlendir
+          // İş arayan kullanıcı - Job Seeker Home Screen'e yönlendir
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const JobSeekerHomeScreen()),
           );
         }
       }

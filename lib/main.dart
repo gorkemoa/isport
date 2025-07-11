@@ -3,8 +3,9 @@ import 'package:provider/provider.dart';
 
 import 'viewmodels/auth_viewmodels.dart';
 import 'viewmodels/profile_viewmodel.dart';
-import 'views/home_screen.dart';
 import 'views/login_screen.dart';
+import 'views/job_seeker/job_seeker_home_screen.dart';
+import 'views/employer/employer_home_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -47,7 +48,12 @@ class AuthWrapper extends StatelessWidget {
               return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
             if (snapshot.hasData && snapshot.data == true) {
-              return const HomeScreen();
+              final user = authViewModel.currentUser;
+              if (user != null && user.isComp) {
+                return const EmployerHomeScreen();
+              } else {
+                return const JobSeekerHomeScreen();
+              }
             }
             return const LoginScreen();
           },
