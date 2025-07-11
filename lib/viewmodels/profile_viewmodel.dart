@@ -1,177 +1,228 @@
-import 'package:flutter/material.dart';
-import 'package:isport/models/auth_models.dart';
-import 'package:isport/models/user_model.dart';
-import 'package:isport/services/auth_services.dart';
-import 'package:isport/services/logger_service.dart';
-import 'package:isport/services/user_service.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user_model.dart';
+import '../models/auth_models.dart';
+import '../services/user_service.dart';
+import '../services/auth_services.dart';
+import '../services/logger_service.dart';
 
+/// Kullanıcı profili state management'ı
 class ProfileViewModel extends ChangeNotifier {
-  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+  UserModel? _user;
+  String? _errorMessage;
   final UserService _userService = UserService();
 
-  UserModel? _user;
-  UserResponse? _userResponse;
-  String? _errorMessage;
-  bool _isLoading = false;
-  bool _needsLogout = false;
-
-  final TextEditingController _firstnameController = TextEditingController();
-  final TextEditingController _lastnameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _currentPasswordController = TextEditingController();
-  final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
-
-  UserModel? get user => _user;
-  UserResponse? get userResponse => _userResponse;
-  String? get errorMessage => _errorMessage;
+  /// Getters
   bool get isLoading => _isLoading;
-  bool get needsLogout => _needsLogout;
+  UserModel? get user => _user;
+  String? get errorMessage => _errorMessage;
+  bool get hasError => _errorMessage != null;
+  bool get isLoggedIn => _user != null;
 
-  TextEditingController get firstnameController => _firstnameController;
-  TextEditingController get lastnameController => _lastnameController;
-  TextEditingController get emailController => _emailController;
-  TextEditingController get phoneController => _phoneController;
-  TextEditingController get currentPasswordController => _currentPasswordController;
-  TextEditingController get newPasswordController => _newPasswordController;
-  TextEditingController get confirmPasswordController => _confirmPasswordController;
-
-  ProfileViewModel() {
-    loadUserData();
+  /// Loading state'i günceller
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
   }
 
-  Future<void> loadUserData() async {
-    _isLoading = true;
-    _errorMessage = null;
+  /// Error mesajını günceller
+  void _setError(String? error) {
+    _errorMessage = error;
     notifyListeners();
+  }
 
+  /// Kullanıcı verilerini günceller
+  void _setUser(UserModel? user) {
+    _user = user;
+    notifyListeners();
+  }
+
+  /// Kullanıcı profilini yükler
+  Future<void> loadUserProfile() async {
     try {
-      final token = await _authService.loadToken();
-      if (token == null) {
-        _needsLogout = true;
-        _isLoading = false;
-        notifyListeners();
+      _setLoading(true);
+      _setError(null);
+
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('userToken');
+
+      if (userToken == null || userToken.isEmpty) {
+        _setError('Kullanıcı oturumu bulunamadı');
+        _setLoading(false);
         return;
       }
+
+      logger.debug('Kullanıcı profili yükleniyor: $userToken');
+
+      final response = await _userService.getUser(userToken: userToken);
       
-      final response = await _userService.getUser(userToken: token);
-      _userResponse = response;
-
-      if (response.success && response.data != null) {
-        _user = response.data!.user;
-        _setUserFieldsFromModel();
-      } else {
-        _errorMessage = response.displayMessage ?? 'Kullanıcı verileri alınamadı.';
-        if (response.isTokenError) {
-          _needsLogout = true;
-        }
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        await _clearUserData();
+        _setLoading(false);
+        return;
       }
+
+      if (response.error) {
+        _setError(response.error_message.isNotEmpty 
+            ? response.error_message 
+            : 'Profil bilgileri alınamadı');
+        _setLoading(false);
+        return;
+      }
+
+      if (response.data?.user != null) {
+        _setUser(response.data!.user);
+        await _saveUserData(response.data!.user);
+        logger.debug('Kullanıcı profili başarıyla yüklendi: ${response.data!.user.userFullname}');
+      } else {
+        _setError('Kullanıcı verileri bulunamadı');
+      }
+
     } catch (e, s) {
-      logger.e('Kullanıcı verileri yüklenirken hata', error: e, stackTrace: s);
-      _errorMessage = e.toString();
+      logger.debug('Profil yüklenirken hata', error: e, stackTrace: s);
+      _setError('Ağ hatası: Lütfen internet bağlantınızı kontrol edin.');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
     }
   }
 
-  Future<void> fetchUser() async {
-    await loadUserData();
-  }
-
-  Future<bool> updateUser(UpdateUserRequest request) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
+  /// Kullanıcı bilgilerini günceller
+  Future<bool> updateUserProfile(UpdateUserRequest request) async {
     try {
+      _setLoading(true);
+      _setError(null);
+
+      logger.debug('Kullanıcı profili güncelleniyor...');
+
       final response = await _userService.updateUser(request);
-
-      _isLoading = false;
-
-      if (response.success) {
-        await loadUserData(); // Refresh data
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response.displayMessage ?? 'Profil güncellenemedi.';
-        if (response.isTokenError) {
-          _needsLogout = true;
-        }
-        notifyListeners();
+      
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        await _clearUserData();
+        _setLoading(false);
         return false;
       }
+
+      if (response.error) {
+        _setError(response.error_message.isNotEmpty 
+            ? response.error_message 
+            : 'Profil güncellenemedi');
+        _setLoading(false);
+        return false;
+      }
+
+      // Başarılı güncelleme sonrası profili yeniden yükle
+      await loadUserProfile();
+      logger.debug('Kullanıcı profili başarıyla güncellendi');
+      return true;
+
     } catch (e, s) {
-      logger.e('Profil güncellenirken hata', error: e, stackTrace: s);
-      _errorMessage = 'Bir hata oluştu: $e';
-      _isLoading = false;
-      notifyListeners();
+      logger.debug('Profil güncellenirken hata', error: e, stackTrace: s);
+      _setError('Ağ hatası: Lütfen internet bağlantınızı kontrol edin.');
+      _setLoading(false);
       return false;
     }
   }
 
+  /// Kullanıcı şifresini günceller
   Future<bool> updatePassword(UpdatePasswordRequest request) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
     try {
-      final response = await _userService.updatePassword(request);
-      _isLoading = false;
+      _setLoading(true);
+      _setError(null);
 
-      if (response.success) {
-        _currentPasswordController.clear();
-        _newPasswordController.clear();
-        _confirmPasswordController.clear();
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = response.displayMessage ?? 'Şifre değiştirilemedi.';
-        if (response.isTokenError) {
-          _needsLogout = true;
-        }
-        notifyListeners();
+      logger.debug('Kullanıcı şifresi güncelleniyor...');
+
+      final response = await _userService.updatePassword(request);
+      
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        await _clearUserData();
+        _setLoading(false);
         return false;
       }
+
+      if (response.error) {
+        _setError(response.error_message.isNotEmpty 
+            ? response.error_message 
+            : 'Şifre güncellenemedi');
+        _setLoading(false);
+        return false;
+      }
+
+      logger.debug('Kullanıcı şifresi başarıyla güncellendi');
+      _setLoading(false);
+      return true;
+
     } catch (e, s) {
-      logger.e('Şifre değiştirilirken hata', error: e, stackTrace: s);
-      _errorMessage = 'Bir hata oluştu: $e';
-      _isLoading = false;
-      notifyListeners();
+      logger.debug('Şifre güncellenirken hata', error: e, stackTrace: s);
+      _setError('Ağ hatası: Lütfen internet bağlantınızı kontrol edin.');
+      _setLoading(false);
       return false;
     }
   }
 
-  void _setUserFieldsFromModel() {
-    if (_user != null) {
-      _firstnameController.text = _user!.userFirstname;
-      _lastnameController.text = _user!.userLastname;
-      _emailController.text = _user!.userEmail;
-      _phoneController.text = _user!.userPhone;
+  /// Kullanıcı verilerini yerel depolamaya kaydeder
+  Future<void> _saveUserData(UserModel user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('userToken', user.userToken);
+      await prefs.setString('userFullname', user.userFullname);
+      await prefs.setString('userEmail', user.userEmail);
+      await prefs.setString('userPhone', user.userPhone);
+      await prefs.setBool('isComp', user.isComp);
+      await prefs.setString('userStatus', user.userStatus);
+      
+      if (user.company != null) {
+        await prefs.setString('companyName', user.company!.compName);
+        await prefs.setString('companyAddress', user.company!.compAddress);
+      }
+      
+      logger.debug('Kullanıcı verileri yerel depolamaya kaydedildi');
+    } catch (e, s) {
+      logger.debug('Kullanıcı verileri kaydedilirken hata', error: e, stackTrace: s);
     }
   }
 
+  /// Kullanıcı verilerini temizler
+  Future<void> _clearUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      _setUser(null);
+      logger.debug('Kullanıcı verileri temizlendi');
+    } catch (e, s) {
+      logger.debug('Kullanıcı verileri temizlenirken hata', error: e, stackTrace: s);
+    }
+  }
+
+  /// Çıkış yap
   Future<void> logout() async {
-    await _authService.logout();
-    _needsLogout = true;
-    notifyListeners();
+    try {
+      _setLoading(true);
+      await _clearUserData();
+      logger.debug('Kullanıcı çıkış yaptı');
+    } catch (e, s) {
+      logger.debug('Çıkış yaparken hata', error: e, stackTrace: s);
+    } finally {
+      _setLoading(false);
+    }
   }
 
+  /// Hata mesajını temizle
   void clearError() {
-    _errorMessage = null;
-    notifyListeners();
+    _setError(null);
   }
 
+  /// Yenile
+  Future<void> refresh() async {
+    await loadUserProfile();
+  }
+
+  /// ViewModel'i temizle
   @override
   void dispose() {
-    _firstnameController.dispose();
-    _lastnameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _currentPasswordController.dispose();
-    _newPasswordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 } 

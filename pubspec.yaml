@@ -44,11 +44,27 @@ dependencies:
   # Veri depolama için
   shared_preferences: ^2.2.2
   
+  # Dosya sistemi erişimi için
+  path_provider: ^2.1.1
+  
   # Logger için
   logger: ^2.0.2+1
   
   flutter_html: ^3.0.0-beta.2
   image_picker: ^1.1.2
+  
+  # Modern UI kütüphaneleri
+  flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.3.1
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1
+  lottie: ^3.1.2
+  flutter_animate: ^4.5.0
+  
+  # Platform bilgisi için
+  device_info_plus: ^10.1.2
+  package_info_plus: ^8.0.2
 
 
 dev_dependencies:

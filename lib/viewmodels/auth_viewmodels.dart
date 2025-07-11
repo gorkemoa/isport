@@ -222,7 +222,7 @@ class AuthViewModel extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e, s) {
-      logger.w('Kullanıcı verileri yenilenirken hata', error: e, stackTrace: s);
+      logger.debug('Kullanıcı verileri yenilenirken hata', error: e, stackTrace: s);
     }
   }
 

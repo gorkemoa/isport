@@ -47,10 +47,14 @@ class AuthService {
 
   /// Kullanıcı girişi yapar
   Future<LoginResponse> login(LoginRequest loginRequest) async {
+    final stopwatch = Stopwatch()..start();
+    
     try {
       final url = Uri.parse('$_baseUrl$_loginEndpoint');
       final headers = getHeaders();
       final body = jsonEncode(loginRequest.toJson());
+
+      logger.info('Kullanıcı girişi başlatıldı', extra: {'email': loginRequest.userEmail});
 
       final response = await http.post(
         url,
@@ -58,9 +62,20 @@ class AuthService {
         body: body,
       );
       
+      stopwatch.stop();
+      
+      // Network request'i logla
+      logger.logNetworkRequest(
+        method: 'POST',
+        url: url.toString(),
+        statusCode: response.statusCode,
+        duration: stopwatch.elapsed,
+      );
+      
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 403) {
+        logger.warning('Token hatası - Giriş reddedildi', extra: {'statusCode': response.statusCode});
         return LoginResponse.fromJson(jsonData, isTokenError: true);
       }
       
@@ -69,18 +84,28 @@ class AuthService {
         
         // Başarılı giriş durumunda kullanıcı verilerini kaydet
         if (loginResponse.success && loginResponse.data != null) {
+          logger.info('Giriş başarılı - Kullanıcı verileri kaydediliyor', 
+                     extra: {'userID': loginResponse.data!.userID});
           await _saveUserData(loginRequest.userEmail, loginResponse.data!);
+          logger.logUserAction('login_success', parameters: {'userID': loginResponse.data!.userID});
+        } else {
+          logger.warning('Giriş başarısız', extra: {'errorMessage': loginResponse.error_message});
         }
         
         return loginResponse;
       } else {
+        logger.error('HTTP Error', extra: {'statusCode': response.statusCode, 'body': response.body});
         return LoginResponse(
           error: true,
           success: false,
           error_message: 'HTTP Error: ${response.statusCode}',
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      logger.error('Giriş sırasında network hatası', 
+                   error: e, stackTrace: stackTrace, 
+                   extra: {'email': loginRequest.userEmail, 'duration': stopwatch.elapsed.inMilliseconds});
       return LoginResponse(
         error: true,
         success: false,
@@ -96,7 +121,7 @@ class AuthService {
       final headers = getHeaders();
       final body = jsonEncode(registerRequest.toJson());
 
-      logger.d('Kayıt İsteği: $body');
+      logger.debug('Kayıt İsteği', extra: {'body': body});
 
       final response = await http.post(
         url,
@@ -104,7 +129,7 @@ class AuthService {
         body: body,
       );
 
-      logger.d('Kayıt Yanıtı: ${response.statusCode} - ${response.body}');
+      logger.debug('Kayıt Yanıtı', extra: {'statusCode': response.statusCode, 'body': response.body});
       
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -138,9 +163,9 @@ class AuthService {
       final headers = getHeaders();
       final body = jsonEncode(request.toJson());
 
-      logger.d('Şifremi Unuttum İsteği: $body');
+      logger.debug('Şifremi Unuttum İsteği', extra: {'body': body});
       final response = await http.post(url, headers: headers, body: body);
-      logger.d('Şifremi Unuttum Yanıtı: ${response.statusCode} - ${response.body}');
+      logger.debug('Şifremi Unuttum Yanıtı', extra: {'statusCode': response.statusCode, 'body': response.body});
 
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -165,9 +190,9 @@ class AuthService {
       final headers = getHeaders();
       final body = jsonEncode(request.toJson());
 
-      logger.d('Kod Kontrol İsteği: $body');
+      logger.debug('Kod Kontrol İsteği', extra: {'body': body});
       final response = await http.post(url, headers: headers, body: body);
-      logger.d('Kod Kontrol Yanıtı: ${response.statusCode} - ${response.body}');
+      logger.debug('Kod Kontrol Yanıtı', extra: {'statusCode': response.statusCode, 'body': response.body});
 
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -192,9 +217,9 @@ class AuthService {
       final headers = getHeaders();
       final body = jsonEncode(request.toJson());
 
-      logger.d('Şifre Sıfırlama İsteği: $body');
+      logger.debug('Şifre Sıfırlama İsteği', extra: {'body': body});
       final response = await http.post(url, headers: headers, body: body);
-      logger.d('Şifre Sıfırlama Yanıtı: ${response.statusCode} - ${response.body}');
+      logger.debug('Şifre Sıfırlama Yanıtı', extra: {'statusCode': response.statusCode, 'body': response.body});
 
       final jsonData = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -228,7 +253,7 @@ class AuthService {
       await prefs.setString(_tokenKey, authData.token);
       await prefs.setString(_userEmailKey, userEmail);
     } catch (e, s) {
-      logger.e('Kullanıcı verileri kaydedilirken hata', error: e, stackTrace: s);
+      logger.error('Kullanıcı verileri kaydedilirken hata', error: e, stackTrace: s);
     }
   }
 
@@ -245,7 +270,7 @@ class AuthService {
       
       return null;
     } catch (e, s) {
-      logger.e('Kullanıcı verileri yüklenirken hata', error: e, stackTrace: s);
+      logger.error('Kullanıcı verileri yüklenirken hata', error: e, stackTrace: s);
       return null;
     }
   }
@@ -256,7 +281,7 @@ class AuthService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_tokenKey);
     } catch (e, s) {
-      logger.e('Token yüklenirken hata', error: e, stackTrace: s);
+      logger.error('Token yüklenirken hata', error: e, stackTrace: s);
       return null;
     }
   }
@@ -269,7 +294,7 @@ class AuthService {
       await prefs.remove(_tokenKey);
       await prefs.remove(_userEmailKey);
     } catch (e, s) {
-      logger.e('Çıkış yapılırken hata', error: e, stackTrace: s);
+      logger.error('Çıkış yapılırken hata', error: e, stackTrace: s);
     }
   }
 
