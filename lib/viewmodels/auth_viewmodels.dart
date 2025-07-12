@@ -1,15 +1,19 @@
 import 'package:flutter/foundation.dart';
 import '../models/auth_models.dart';
+import '../models/user_model.dart';
 import '../services/auth_services.dart';
+import '../services/user_service.dart';
 import '../services/logger_service.dart';
 
 /// Authentication ViewModel (Provider pattern ile)
 class AuthViewModel extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
 
   // Private durumlar
   AuthStatus _authStatus = AuthStatus.initial;
   User? _currentUser;
+  UserModel? _currentUserDetail;
   String? _errorMessage;
   bool _isLoading = false;
   String? _codeToken;
@@ -17,6 +21,7 @@ class AuthViewModel extends ChangeNotifier {
   // Public getter'lar
   AuthStatus get authStatus => _authStatus;
   User? get currentUser => _currentUser;
+  UserModel? get currentUserDetail => _currentUserDetail;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _authStatus == AuthStatus.authenticated;
@@ -65,6 +70,18 @@ class AuthViewModel extends ChangeNotifier {
           isComp: loginResponse.data!.isComp,
           userEmail: email,
         );
+        
+        // Eğer kurumsal kullanıcı ise getUser çağırısı yap
+        if (loginResponse.data!.isComp) {
+          final userResponse = await _userService.getUser(userToken: loginResponse.data!.token);
+          
+          if (userResponse.success && userResponse.data != null) {
+            _currentUserDetail = userResponse.data!.user;
+            logger.info('Kurumsal kullanıcı detayları alındı', extra: {'userID': userResponse.data!.user.userID});
+          } else {
+            logger.warning('Kurumsal kullanıcı detayları alınamadı: ${userResponse.error_message}');
+          }
+        }
         
         _setAuthStatus(AuthStatus.authenticated);
         _clearError();
@@ -204,6 +221,7 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _authService.logout();
       _currentUser = null;
+      _currentUserDetail = null;
       _setAuthStatus(AuthStatus.unauthenticated);
       _clearError();
     } catch (e) {
@@ -223,6 +241,39 @@ class AuthViewModel extends ChangeNotifier {
       }
     } catch (e, s) {
       logger.debug('Kullanıcı verileri yenilenirken hata', error: e, stackTrace: s);
+    }
+  }
+
+  /// Kullanıcı detaylarını API'den alır
+  Future<bool> getUserDetails() async {
+    if (_currentUser?.token == null) {
+      _setError('Kullanıcı token\'ı bulunamadı');
+      return false;
+    }
+
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final userResponse = await _userService.getUser(userToken: _currentUser!.token);
+
+      if (userResponse.success && userResponse.data != null) {
+        _currentUserDetail = userResponse.data!.user;
+        logger.info('Kullanıcı detayları başarıyla alındı', extra: {'userID': userResponse.data!.user.userID});
+        _setLoading(false);
+        return true;
+      } else {
+        _setError(userResponse.displayMessage ?? 'Kullanıcı detayları alınamadı');
+        if (userResponse.isTokenError) {
+          _setAuthStatus(AuthStatus.unauthenticated);
+        }
+        _setLoading(false);
+        return false;
+      }
+    } catch (e) {
+      _setError('Kullanıcı detayları alınırken hata: $e');
+      _setLoading(false);
+      return false;
     }
   }
 

@@ -409,7 +409,7 @@ class _JobListingScreenState extends State<JobListingScreen>
       onRefresh: () => context.read<JobViewModel>().refreshJobs(),
       color:   AppColors.primary,
       child: ListView(
-        padding: const EdgeInsets.only(top: 4, bottom: 160, left: 8, right: 8),
+        padding: const EdgeInsets.only(top: 4, bottom: 10, left: 8, right: 8),
         children: allJobs.isNotEmpty ? allJobs : [
           const EmptyJobsWidget(message: 'İş ilanı bulunamadı'),
         ],
