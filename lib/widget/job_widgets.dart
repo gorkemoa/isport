@@ -214,21 +214,6 @@ class JobCard extends StatelessWidget {
           ),
         ),
         
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: const Color(0xFF059669).withOpacity(0.08),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            'Aktif',
-            style: GoogleFonts.inter(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              color: const Color(0xFF059669),
-            ),
-          ),
-        ),
       ],
     );
   }

@@ -406,3 +406,112 @@ class JobDetailResponse {
     return errorMessage.isNotEmpty ? errorMessage : null;
   }
 } 
+
+/// İş başvurusu isteğini temsil eden model
+class ApplyJobRequest {
+  final String userToken;
+  final int jobID;
+  final String appNote;
+
+  ApplyJobRequest({
+    required this.userToken,
+    required this.jobID,
+    required this.appNote,
+  });
+
+  /// ApplyJobRequest'i JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'userToken': userToken,
+      'jobID': jobID,
+      'appNote': appNote,
+    };
+  }
+}
+
+/// İş başvurusu yanıtı data modeli
+class ApplyJobData {
+  final int appID;
+
+  ApplyJobData({required this.appID});
+
+  /// JSON'dan ApplyJobData oluşturur
+  factory ApplyJobData.fromJson(Map<String, dynamic> json) {
+    return ApplyJobData(
+      appID: json['appID'] ?? 0,
+    );
+  }
+
+  /// ApplyJobData'yı JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'appID': appID,
+    };
+  }
+}
+
+/// İş başvurusu API yanıtını temsil eden model
+class ApplyJobResponse {
+  final bool error;
+  final bool success;
+  final String successMessage;
+  final ApplyJobData? data;
+  final String? status410;
+  final String? status417;
+  final String errorMessage;
+  final bool isTokenError;
+
+  ApplyJobResponse({
+    required this.error,
+    required this.success,
+    required this.successMessage,
+    this.data,
+    this.status410,
+    this.status417,
+    required this.errorMessage,
+    this.isTokenError = false,
+  });
+
+  /// JSON'dan ApplyJobResponse oluşturur
+  factory ApplyJobResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
+    return ApplyJobResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      successMessage: json['success_message'] ?? '',
+      data: json['data'] != null ? ApplyJobData.fromJson(json['data']) : null,
+      status410: json['410'],
+      status417: json['417'],
+      errorMessage: json['error_message'] ?? json['417'] ?? '',
+      isTokenError: isTokenError,
+    );
+  }
+
+  /// ApplyJobResponse'u JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'success_message': successMessage,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
+
+  /// İstek başarılı mı kontrol eder (410 status başarılı demektir)
+  bool get isSuccessful => status410 != null || (!error && success);
+
+  /// Hata mesajını alır
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (status417 != null) return status417;
+    return errorMessage.isNotEmpty ? errorMessage : null;
+  }
+
+  /// Başarı mesajını alır
+  String get displaySuccessMessage {
+    if (successMessage.isNotEmpty) return successMessage;
+    return 'Başvurunuz başarıyla alınmıştır.';
+  }
+} 

@@ -269,7 +269,8 @@ class JobService {
 
   /// Bir işe başvuru yapar
   /// [jobId] - İş ID'si
-  Future<BaseResponse> applyToJob(int jobId) async {
+  /// [appNote] - Başvuru notu
+  Future<ApplyJobResponse> applyToJob(int jobId, String appNote) async {
     try {
       logger.debug('İşe başvuru yapılıyor - İş ID: $jobId');
 
@@ -279,39 +280,87 @@ class JobService {
 
       if (userToken.isEmpty) {
         logger.warning('User token bulunamadı');
-        return BaseResponse(
+        return ApplyJobResponse(
           error: true,
           success: false,
+          successMessage: '',
           errorMessage: 'Oturum açmanız gerekiyor',
           isTokenError: true,
         );
       }
 
       // API isteği hazırla
-      final uri = Uri.parse('$_baseUrl$_companyJobsEndpoint/$jobId/apply');
-      final headers = AuthService.getHeaders(userToken: userToken);
+      final uri = Uri.parse('$_baseUrl/service/user/account/jobApply');
+      final headers = AuthService.getHeaders();
+
+      // Request body hazırla
+      final requestBody = ApplyJobRequest(
+        userToken: userToken,
+        jobID: jobId,
+        appNote: appNote,
+      );
 
       logger.debug('API isteği gönderiliyor: ${uri.toString()}');
+      logger.debug('Request body: ${jsonEncode(requestBody.toJson())}');
 
       // HTTP isteği gönder
       final response = await http.post(
         uri,
         headers: headers,
+        body: jsonEncode(requestBody.toJson()),
       ).timeout(_connectTimeout);
 
       logger.debug('API yanıtı alındı - Status: ${response.statusCode}');
-      
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
 
       // Yanıtı parse et
-      return BaseResponse.fromJson(jsonResponse);
+      return _parseApplyJobResponse(response);
 
     } catch (e) {
       logger.error('İşe başvuru hatası: $e');
-      return BaseResponse(
+      return ApplyJobResponse(
         error: true,
         success: false,
+        successMessage: '',
         errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
+  /// HTTP yanıtını ApplyJobResponse'a çevirir
+  ApplyJobResponse _parseApplyJobResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return ApplyJobResponse(
+          error: true,
+          success: false,
+          successMessage: '',
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
+      }
+      
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return ApplyJobResponse.fromJson(jsonResponse);
+      } else {
+        // Normal error handling
+        return ApplyJobResponse.fromJson(jsonResponse);
+      }
+
+    } catch (e) {
+      logger.error('JSON parse hatası: $e');
+      return ApplyJobResponse(
+        error: true,
+        success: false,
+        successMessage: '',
+        errorMessage: 'Veri işleme hatası',
       );
     }
   }

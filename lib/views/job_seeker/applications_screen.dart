@@ -6,11 +6,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../models/application_models.dart';
+import '../../models/favorites_models.dart';
 import '../../viewmodels/application_viewmodel.dart';
+import '../../viewmodels/favorites_viewmodel.dart';
 import '../../utils/app_constants.dart';
 import 'job_detail_screen.dart';
+import 'company/company_detail_screen.dart';
 
-/// İş başvuruları listeleme ekranı
+/// Başvurular ve Favoriler listeleme ekranı
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({super.key});
 
@@ -19,16 +22,20 @@ class ApplicationsScreen extends StatefulWidget {
 }
 
 class _ApplicationsScreenState extends State<ApplicationsScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  List<ApplicationModel> _filteredApplications = [];
   bool _isSearchActive = false;
-  late TabController _tabController;
+  late TabController _mainTabController;
+  late TabController _applicationsTabController;
   
-  // Tab indeksleri
-  static const int _allTab = 0;
+  // Ana tab indeksleri
+  static const int _applicationsTab = 0;
+  static const int _favoritesTab = 1;
+  
+  // Başvurular alt tab indeksleri
+  static const int _allApplicationsTab = 0;
   static const int _pendingTab = 1;
   static const int _acceptedTab = 2;
   static const int _rejectedTab = 3;
@@ -36,11 +43,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _mainTabController = TabController(length: 2, vsync: this);
+    _applicationsTabController = TabController(length: 4, vsync: this);
     
     // İlk yükleme
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ApplicationViewModel>().loadApplications();
+      // User ID'yi doğru şekilde al - bu örnek için 2 kullanıyorum
+      context.read<FavoritesViewModel>().loadFavorites(2);
     });
     
     // Search controller listener
@@ -49,7 +59,8 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _mainTabController.dispose();
+    _applicationsTabController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -58,43 +69,27 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
     setState(() {
       _searchQuery = _searchController.text.toLowerCase();
       _isSearchActive = _searchQuery.isNotEmpty;
-      _filterApplications();
     });
-  }
-
-  void _filterApplications() {
-    final appVM = context.read<ApplicationViewModel>();
-    if (_searchQuery.isEmpty) {
-      _filteredApplications = appVM.applications;
-    } else {
-      _filteredApplications = appVM.searchApplications(_searchQuery);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Consumer<ApplicationViewModel>(
-        builder: (context, appVM, child) {
-          // Her consumer çağrıldığında filtreleme yap
-          if (!_isSearchActive) {
-            _filteredApplications = appVM.applications;
-          } else {
-            _filteredApplications = appVM.searchApplications(_searchQuery);
-          }
-
+      body: Consumer2<ApplicationViewModel, FavoritesViewModel>(
+        builder: (context, appVM, favVM, child) {
           return CustomScrollView(
             slivers: [
-              _buildAppBar(appVM),
+              _buildAppBar(appVM, favVM),
+              _buildMainTabBar(),
               _buildSearchBar(),
-              _buildStatsCard(appVM),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _buildContent(appVM),
-                  ]),
+              SliverFillRemaining(
+                child: TabBarView(
+                  controller: _mainTabController,
+                  children: [
+                    _buildApplicationsContent(appVM),
+                    _buildFavoritesContent(favVM),
+                  ],
                 ),
               ),
             ],
@@ -104,9 +99,9 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
     );
   }
 
-  Widget _buildAppBar(ApplicationViewModel appVM) {
+  Widget _buildAppBar(ApplicationViewModel appVM, FavoritesViewModel favVM) {
     return SliverAppBar(
-      expandedHeight: 120,
+      expandedHeight: 140,
       floating: false,
       pinned: true,
       elevation: 0,
@@ -141,7 +136,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Başvurularım',
+                              'Başvurularım & Favorilerim',
                               style: GoogleFonts.inter(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w600,
@@ -150,7 +145,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                             ).animate().fadeIn(duration: 500.ms).slideX(),
                             const SizedBox(height: 2),
                             Text(
-                              '${appVM.applicationCount} başvuru',
+                              '${appVM.applicationCount} başvuru • ${favVM.favoriteCount} favori',
                               style: GoogleFonts.inter(
                                 fontSize: 12,
                                 color: Colors.white.withOpacity(0.9),
@@ -159,19 +154,18 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                           ],
                         ),
                       ),
-                      if (appVM.hasApplications)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.work_outline,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ).animate().fadeIn(delay: 300.ms, duration: 500.ms).scale(),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          _mainTabController.index == 0 ? Icons.work_outline : Icons.favorite_outline,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ).animate().fadeIn(delay: 300.ms, duration: 500.ms).scale(),
                     ],
                   ),
                 ],
@@ -180,6 +174,53 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMainTabBar() {
+    return SliverToBoxAdapter(
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: TabBar(
+          controller: _mainTabController,
+          indicator: BoxDecoration(
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        indicatorPadding: const EdgeInsets.only(bottom: 0, top: 0, left: -55, right: -55),
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.grey[600],
+          labelStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          unselectedLabelStyle: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          tabs: const [
+            Tab(
+              icon: Icon(Icons.work_outline, size: 20),
+              text: 'Başvurular',
+            ),
+            Tab(
+              icon: Icon(Icons.favorite_outline, size: 20),
+              text: 'Favoriler',
+            ),
+          ],
+        ),
+      ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideY(begin: -0.05, end: 0),
     );
   }
 
@@ -209,7 +250,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                     color: const Color(0xFF374151),
                   ),
                   decoration: InputDecoration(
-                    hintText: 'İş başvurusu ara...',
+                    hintText: _mainTabController.index == 0 ? 'Başvuru ara...' : 'Favori ara...',
                     hintStyle: GoogleFonts.inter(
                       fontSize: 14,
                       color: Colors.grey[500],
@@ -264,187 +305,144 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
             ),
           ],
         ),
-      ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideY(begin: -0.05, end: 0),
+      ).animate().fadeIn(delay: 300.ms, duration: 500.ms).slideY(begin: -0.05, end: 0),
     );
   }
 
-  Widget _buildStatsCard(ApplicationViewModel appVM) {
-    if (!appVM.hasApplications) return const SliverToBoxAdapter();
-
-    final statusCounts = appVM.statusCounts;
-    final stats = [
-      {'title': 'Toplam', 'count': appVM.applicationCount, 'color': Colors.blue, 'icon': Icons.work_outline},
-      {'title': 'Yeni', 'count': statusCounts['Yeni Başvuru'] ?? 0, 'color': Colors.orange, 'icon': Icons.schedule},
-      {'title': 'Değerlendirme', 'count': statusCounts['Değerlendiriliyor'] ?? 0, 'color': Colors.amber, 'icon': Icons.hourglass_empty},
-      {'title': 'Sonuç', 'count': statusCounts['Sonuçlandı'] ?? 0, 'color': Colors.green, 'icon': Icons.check_circle_outline},
-    ];
-
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+  Widget _buildApplicationsContent(ApplicationViewModel appVM) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(
+        children: [
+          if (appVM.hasApplications) ...[
+            _buildApplicationsTabBar(appVM),
+            const SizedBox(height: 16),
+          ],
+          Expanded(
+            child: _buildApplicationsTabView(appVM),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Başvuru Özeti',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF374151),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: stats.map((stat) {
-                  final index = stats.indexOf(stat);
-                  return Expanded(
-                    child: AnimationConfiguration.staggeredList(
-                      position: index,
-                      duration: const Duration(milliseconds: 500),
-                      child: SlideAnimation(
-                        horizontalOffset: 30.0,
-                        child: FadeInAnimation(
-                          child: _buildStatItem(
-                            title: stat['title'] as String,
-                            count: stat['count'] as int,
-                            color: stat['color'] as Color,
-                            icon: stat['icon'] as IconData,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-      ).animate().fadeIn(delay: 400.ms, duration: 500.ms).slideY(begin: 0.05, end: 0),
+        ],
+      ),
     );
   }
 
-  Widget _buildStatItem({
-    required String title,
-    required int count,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Column(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: color,
-            size: 20,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          count.toString(),
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF374151),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          title,
-          style: GoogleFonts.inter(
-            fontSize: 11,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContent(ApplicationViewModel appVM) {
-    if (appVM.isLoading) {
-      return _buildLoadingState();
-    }
-
-    if (appVM.hasError) {
-      return _buildErrorState(appVM.errorMessage, appVM);
-    }
-
-    if (!appVM.hasApplications) {
-      return _buildEmptyState();
-    }
-
-    if (_isSearchActive && _filteredApplications.isEmpty) {
-      return _buildEmptySearchState();
-    }
-
-    return Column(
-      children: [
-        _buildTabBar(appVM),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: MediaQuery.of(context).size.height * 0.6,
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildApplicationsList(_filteredApplications),
-              _buildApplicationsList(_filteredApplications.where((app) => app.statusName.contains('Yeni')).toList()),
-              _buildApplicationsList(_filteredApplications.where((app) => app.statusName.contains('Kabul')).toList()),
-              _buildApplicationsList(_filteredApplications.where((app) => app.statusName.contains('Red')).toList()),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTabBar(ApplicationViewModel appVM) {
+  Widget _buildApplicationsTabBar(ApplicationViewModel appVM) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: TabBar(
-        controller: _tabController,
+        controller: _applicationsTabController,
         indicator: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(6),
         ),
+        indicatorPadding: const EdgeInsets.only(bottom: 0, top: 0, left: -25, right: -25),
         labelColor: Colors.white,
         unselectedLabelColor: Colors.grey[600],
         labelStyle: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
         ),
         unselectedLabelStyle: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
         ),
-        indicatorPadding: const EdgeInsets.all(2),
         tabs: [
           Tab(text: 'Tümü (${appVM.applicationCount})'),
           Tab(text: 'Yeni (${appVM.statusCounts['Yeni Başvuru'] ?? 0})'),
           Tab(text: 'Kabul (${appVM.statusCounts['Kabul Edildi'] ?? 0})'),
           Tab(text: 'Red (${appVM.statusCounts['Red Edildi'] ?? 0})'),
         ],
+      ),
+    );
+  }
+
+  Widget _buildApplicationsTabView(ApplicationViewModel appVM) {
+    if (appVM.isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (appVM.hasError) {
+      return _buildErrorState(appVM.errorMessage!, () => appVM.loadApplications(forceRefresh: true));
+    }
+
+    if (!appVM.hasApplications) {
+      return _buildEmptyApplicationsState();
+    }
+
+    final filteredApplications = _isSearchActive 
+        ? appVM.searchApplications(_searchQuery)
+        : appVM.applications;
+
+    if (_isSearchActive && filteredApplications.isEmpty) {
+      return _buildEmptySearchState();
+    }
+
+    return TabBarView(
+      controller: _applicationsTabController,
+      children: [
+        _buildApplicationsList(filteredApplications),
+        _buildApplicationsList(filteredApplications.where((app) => app.statusName.contains('Yeni')).toList()),
+        _buildApplicationsList(filteredApplications.where((app) => app.statusName.contains('Kabul')).toList()),
+        _buildApplicationsList(filteredApplications.where((app) => app.statusName.contains('Red')).toList()),
+      ],
+    );
+  }
+
+  Widget _buildFavoritesContent(FavoritesViewModel favVM) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: _buildFavoritesView(favVM),
+    );
+  }
+
+  Widget _buildFavoritesView(FavoritesViewModel favVM) {
+    if (favVM.isLoading) {
+      return _buildLoadingState();
+    }
+
+    if (favVM.hasError) {
+      return _buildErrorState(favVM.errorMessage!, () => favVM.loadFavorites(2, useCache: false));
+    }
+
+    if (!favVM.hasFavorites) {
+      return _buildEmptyFavoritesState();
+    }
+
+    final filteredFavorites = _isSearchActive 
+        ? favVM.searchFavorites(_searchQuery)
+        : favVM.filteredFavorites;
+
+    if (_isSearchActive && filteredFavorites.isEmpty) {
+      return _buildEmptySearchState();
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => favVM.refreshFavorites(2),
+      color: AppColors.primary,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 4, bottom: 16),
+        itemCount: filteredFavorites.length,
+        itemBuilder: (context, index) {
+          final favorite = filteredFavorites[index];
+          return AnimationConfiguration.staggeredList(
+            position: index,
+            duration: const Duration(milliseconds: 400),
+            child: SlideAnimation(
+              verticalOffset: 30.0,
+              child: FadeInAnimation(
+                child: _FavoriteCard(
+                  favorite: favorite,
+                  onTap: () => _showJobDetail(favorite.jobID),
+                  onToggleFavorite: () => favVM.toggleJobFavorite(favorite.jobID),
+                  onCompanyTap: () => _showCompanyDetail(favorite.compID),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -477,7 +475,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
       onRefresh: () => context.read<ApplicationViewModel>().refreshApplications(),
       color: AppColors.primary,
       child: ListView.builder(
-        padding: const EdgeInsets.only(top: 4, bottom: 150),
+        padding: const EdgeInsets.only(top: 4, bottom: 16),
         itemCount: applications.length,
         itemBuilder: (context, index) {
           final application = applications[index];
@@ -489,7 +487,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
               child: FadeInAnimation(
                 child: _ApplicationCard(
                   application: application,
-                  onTap: () => _showApplicationDetail(application),
+                  onTap: () => _showJobDetail(application.jobID),
                 ),
               ),
             ),
@@ -520,7 +518,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
     );
   }
 
-  Widget _buildErrorState(String message, ApplicationViewModel appVM) {
+  Widget _buildErrorState(String message, VoidCallback onRetry) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -550,7 +548,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => appVM.loadApplications(forceRefresh: true),
+            onPressed: onRetry,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -571,7 +569,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyApplicationsState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -602,9 +600,62 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              // İş arama sayfasına yönlendir
               final tabController = DefaultTabController.of(context);
-              tabController?.animateTo(1); // İş ara tab'ına git
+              tabController?.animateTo(1);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'İş Ara',
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyFavoritesState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.favorite_border,
+            size: 48,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Henüz Favori Yok',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF374151),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Beğendiğiniz iş ilanlarını favorilere ekleyerek burada görüntüleyebilirsiniz',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              final tabController = DefaultTabController.of(context);
+              tabController?.animateTo(1);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -674,11 +725,19 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
     );
   }
 
-  void _showApplicationDetail(ApplicationModel application) {
+  void _showJobDetail(int jobId) {
     HapticFeedback.lightImpact();
-    
-    // İş detayına yönlendir
-    JobDetailBottomSheet.show(context, application.jobID);
+    JobDetailBottomSheet.show(context, jobId);
+  }
+
+  void _showCompanyDetail(int companyId) {
+    HapticFeedback.lightImpact();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CompanyDetailScreen(companyId: companyId),
+      ),
+    );
   }
 
   void _showFilterBottomSheet() {
@@ -853,6 +912,167 @@ class _ApplicationCard extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: statusColor,
+        ),
+      ),
+    );
+  }
+}
+
+/// Favori kartı widget'ı
+class _FavoriteCard extends StatelessWidget {
+  final FavoriteJobModel favorite;
+  final VoidCallback onTap;
+  final VoidCallback onToggleFavorite;
+  final VoidCallback onCompanyTap;
+
+  const _FavoriteCard({
+    required this.favorite,
+    required this.onTap,
+    required this.onToggleFavorite,
+    required this.onCompanyTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        elevation: 0,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[200]!),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Company avatar
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          favorite.companyInitials,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            favorite.jobTitle,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          InkWell(
+                            onTap: onCompanyTap,
+                            child: Text(
+                              favorite.compName,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    IconButton(
+                      onPressed: onToggleFavorite,
+                      icon: const Icon(
+                        Icons.favorite,
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  favorite.shortDescription,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: favorite.workTypeColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        favorite.workType,
+                        style: GoogleFonts.inter(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: favorite.workTypeColor,
+                        ),
+                      ),
+                    ),
+                    
+                    const Spacer(),
+                    
+                    Text(
+                      favorite.showDate,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: Colors.grey[500],
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 12,
+                      color: Colors.grey[400],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

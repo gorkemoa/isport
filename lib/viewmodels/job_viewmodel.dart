@@ -21,6 +21,11 @@ class JobViewModel extends ChangeNotifier {
   JobDetailData? _currentJobDetail;
   String? _jobDetailErrorMessage;
   final Map<int, JobDetailData> _jobDetailCache = {};
+  
+  // Job apply state variables
+  bool _isApplying = false;
+  String? _applySuccessMessage;
+  String? _applyErrorMessage;
 
   // Public getters
   bool get isLoading => _isLoading;
@@ -37,6 +42,12 @@ class JobViewModel extends ChangeNotifier {
   JobDetailData? get currentJobDetail => _currentJobDetail;
   bool get hasJobDetailError => _jobDetailErrorMessage != null;
   String? get jobDetailErrorMessage => _jobDetailErrorMessage;
+  
+  // Job apply getters
+  bool get isApplying => _isApplying;
+  String? get applySuccessMessage => _applySuccessMessage;
+  String? get applyErrorMessage => _applyErrorMessage;
+  bool get hasApplyError => _applyErrorMessage != null;
 
   /// Loading state'i günceller
   void _setLoading(bool loading) {
@@ -77,6 +88,33 @@ class JobViewModel extends ChangeNotifier {
   /// Job detail error'ı temizler
   void clearJobDetailError() {
     _jobDetailErrorMessage = null;
+    notifyListeners();
+  }
+
+  /// Apply loading state'i günceller
+  void _setApplying(bool applying) {
+    _isApplying = applying;
+    notifyListeners();
+  }
+
+  /// Apply success mesajını günceller
+  void _setApplySuccess(String? message) {
+    _applySuccessMessage = message;
+    _applyErrorMessage = null;
+    notifyListeners();
+  }
+
+  /// Apply error mesajını günceller
+  void _setApplyError(String? error) {
+    _applyErrorMessage = error;
+    _applySuccessMessage = null;
+    notifyListeners();
+  }
+
+  /// Apply mesajlarını temizler
+  void clearApplyMessages() {
+    _applySuccessMessage = null;
+    _applyErrorMessage = null;
     notifyListeners();
   }
 
@@ -121,32 +159,45 @@ class JobViewModel extends ChangeNotifier {
   }
 
   /// Bir işe başvuru yapar
-  Future<bool> applyToJob(int jobId) async {
+  /// [jobId] - İş ID'si
+  /// [appNote] - Başvuru notu
+  Future<bool> applyToJob(int jobId, String appNote) async {
     try {
+      _setApplying(true);
+      clearApplyMessages();
+      
       logger.debug('İşe başvuru yapılıyor - ViewModel - İş ID: $jobId');
-      final response = await _jobService.applyToJob(jobId);
+      final response = await _jobService.applyToJob(jobId, appNote);
 
-      if (response.success) {
+      if (response.isSuccessful) {
         logger.debug('İşe başvuru başarılı');
-        // State'i güncelle
+        
+        // Başarı mesajını göster
+        _setApplySuccess(response.displaySuccessMessage);
+        
+        // State'i güncelle (optimistic update)
         if (_currentJobDetail != null && _currentJobDetail!.job.jobID == jobId) {
           _currentJobDetail!.job.isApplied = true;
           notifyListeners();
         }
+        
         // Cache'i de güncelle
         if (_jobDetailCache.containsKey(jobId)) {
           _jobDetailCache[jobId]!.job.isApplied = true;
         }
+        
         return true;
       } else {
         logger.warning('İşe başvuru başarısız: ${response.errorMessage}');
-        _setJobDetailError(response.displayMessage ?? 'Başvuru sırasında bir hata oluştu.');
+        _setApplyError(response.displayMessage ?? 'Başvuru sırasında bir hata oluştu.');
         return false;
       }
     } catch (e) {
       logger.error('İşe başvuru hatası - ViewModel: $e');
-      _setJobDetailError('Başvuru sırasında beklenmedik bir hata oluştu.');
+      _setApplyError('Başvuru sırasında beklenmedik bir hata oluştu.');
       return false;
+    } finally {
+      _setApplying(false);
     }
   }
 
