@@ -27,7 +27,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
@@ -63,7 +63,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                   padding: const EdgeInsets.all(AppPaddings.card),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppBorderRadius.card),
+                    borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.grey.withOpacity(0.1),
@@ -104,7 +104,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  userDetail?.compName ?? 'Kurumsal Kullanıcı',
+                                  userDetail?.company?.compName ?? 'Kurumsal Kullanıcı',
                                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     color: AppColors.textLight,
                                   ),
@@ -238,7 +238,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppBorderRadius.button),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     icon: const Icon(Icons.logout),
@@ -310,7 +310,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(AppBorderRadius.card),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
