@@ -243,14 +243,10 @@ class JobDetailBottomSheet extends StatelessWidget {
                                       : () {
                                           HapticFeedback.lightImpact();
                                           Navigator.pop(context);
-                                          showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            builder: (context) => _ApplyJobBottomSheet(
-                                              job: jobDetail.job,
-                                              jobViewModel: jobVM,
-                                            ),
+                                          ApplyJobBottomSheet.show(
+                                            context,
+                                            jobDetail.job,
+                                            jobVM,
                                           );
                                         },
                                   style: ElevatedButton.styleFrom(
@@ -1562,15 +1558,11 @@ class _StickyApplyButtonState extends State<_StickyApplyButton> {
   void _showApplyBottomSheet(BuildContext context, JobViewModel jobViewModel) {
     HapticFeedback.lightImpact();
     
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _ApplyJobBottomSheet(
-        job: widget.job,
-        jobViewModel: jobViewModel,
-      ),
-    );
+          ApplyJobBottomSheet.show(
+        context,
+        widget.job,
+        jobViewModel,
+      );
   }
 
   @override
@@ -1665,20 +1657,36 @@ class _StickyApplyButtonState extends State<_StickyApplyButton> {
 } 
 
 /// Modern başvuru bottom sheet'i
-class _ApplyJobBottomSheet extends StatefulWidget {
+class ApplyJobBottomSheet extends StatefulWidget {
   final JobDetailModel job;
   final JobViewModel jobViewModel;
 
-  const _ApplyJobBottomSheet({
+  const ApplyJobBottomSheet({
+    super.key,
     required this.job,
     required this.jobViewModel,
   });
 
+  /// Bottom sheet'i gösterir
+  static void show(BuildContext context, JobDetailModel job, JobViewModel jobViewModel) {
+    HapticFeedback.lightImpact();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ApplyJobBottomSheet(
+        job: job,
+        jobViewModel: jobViewModel,
+      ),
+    );
+  }
+
   @override
-  State<_ApplyJobBottomSheet> createState() => _ApplyJobBottomSheetState();
+  State<ApplyJobBottomSheet> createState() => _ApplyJobBottomSheetState();
 }
 
-class _ApplyJobBottomSheetState extends State<_ApplyJobBottomSheet> {
+class _ApplyJobBottomSheetState extends State<ApplyJobBottomSheet> {
   final TextEditingController _noteController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 

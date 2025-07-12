@@ -12,14 +12,18 @@ class JobCard extends StatelessWidget {
   final JobModel job;
   final CompanyDetailModel company;
   final VoidCallback? onTap;
+  final VoidCallback? onApply;
   final bool showCompanyInfo;
+  final bool showApplyButton;
 
   const JobCard({
     super.key,
     required this.job,
     required this.company,
     this.onTap,
+    this.onApply,
     this.showCompanyInfo = true,
+    this.showApplyButton = true,
   });
 
   @override
@@ -118,31 +122,78 @@ class JobCard extends StatelessWidget {
                     ),
                   ),
                 
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color:   (AppColors.primary).withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Detaylar',
-                        style: GoogleFonts.inter(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color:   (AppColors.primary),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showApplyButton && onApply != null) ...[
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          onApply?.call();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.send,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Başvur',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 2),
-                      Icon(
-                        Icons.arrow_forward_ios,
-                        size: 8,
-                        color:   (AppColors.primary),
-                      ),
+                      const SizedBox(width: 6),
                     ],
-                  ),
+                    
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        onTap?.call();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Detaylar',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 8,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

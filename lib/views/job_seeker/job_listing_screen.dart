@@ -381,10 +381,15 @@ class _JobListingScreenState extends State<JobListingScreen>
             child: SlideAnimation(
               verticalOffset: 30.0,
               child: FadeInAnimation(
-                child: JobCard(
-                  job: job,
-                  company: companyData.company,
-                  onTap: () => _showJobDetail(job, companyData.company),
+                child: Consumer<JobViewModel>(
+                  builder: (context, jobVM, child) {
+                    return JobCard(
+                      job: job,
+                      company: companyData.company,
+                      onTap: () => _showJobDetail(job, companyData.company),
+                      onApply: () => _showApplyBottomSheet(context, job, jobVM),
+                    );
+                  },
                 ),
               ),
             ),
@@ -512,6 +517,21 @@ class _JobListingScreenState extends State<JobListingScreen>
     JobDetailBottomSheet.show(context, job.jobID);
   }
 
+  void _showApplyBottomSheet(BuildContext context, JobModel job, JobViewModel jobVM) {
+    HapticFeedback.lightImpact();
+    
+    // Önce job detail'i yükle
+    jobVM.loadJobDetail(job.jobID).then((_) {
+      if (jobVM.currentJobDetail != null) {
+        ApplyJobBottomSheet.show(
+          context,
+          jobVM.currentJobDetail!.job,
+          jobVM,
+        );
+      }
+    });
+  }
+
 
 
 
@@ -591,6 +611,21 @@ class _CompanyJobsScreen extends StatelessWidget {
 
   const _CompanyJobsScreen({required this.companyData});
 
+  void _showApplyBottomSheetInCompanyScreen(BuildContext context, JobModel job, JobViewModel jobVM) {
+    HapticFeedback.lightImpact();
+    
+    // Önce job detail'i yükle
+    jobVM.loadJobDetail(job.jobID).then((_) {
+      if (jobVM.currentJobDetail != null) {
+        ApplyJobBottomSheet.show(
+          context,
+          jobVM.currentJobDetail!.job,
+          jobVM,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -620,11 +655,16 @@ class _CompanyJobsScreen extends StatelessWidget {
             child: SlideAnimation(
               verticalOffset: 30.0,
               child: FadeInAnimation(
-                child: JobCard(
-                  job: job,
-                  company: companyData.company,
-                  showCompanyInfo: false,
-                  onTap: () => JobDetailBottomSheet.show(context, job.jobID),
+                child: Consumer<JobViewModel>(
+                  builder: (context, jobVM, child) {
+                    return JobCard(
+                      job: job,
+                      company: companyData.company,
+                      showCompanyInfo: false,
+                      onTap: () => JobDetailBottomSheet.show(context, job.jobID),
+                      onApply: () => _showApplyBottomSheetInCompanyScreen(context, job, jobVM),
+                    );
+                  },
                 ),
               ),
             ),
