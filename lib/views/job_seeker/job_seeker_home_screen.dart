@@ -11,6 +11,8 @@ import '../login_screen.dart';
 import '../../viewmodels/profile_viewmodel.dart';
 import '../../models/user_model.dart';
 import 'job_listing_screen.dart';
+import 'applications_screen.dart';
+import 'job_seeker_profile_screen.dart';
 
 class JobSeekerHomeScreen extends StatefulWidget {
   const JobSeekerHomeScreen({super.key});
@@ -290,10 +292,23 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
                           );
                           break;
                         case 'Başvurularım':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ApplicationsScreen(),
+                            ),
+                          );
                           break;
                         case 'Profil':
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const JobSeekerProfileScreen(),
+                            ),
+                          );
                           break;
                         case 'Mesajlar':
+                          _showComingSoonDialog('Mesajlar');
                           break;
                       }
                     },
@@ -517,6 +532,64 @@ class _JobSeekerHomeScreenState extends State<JobSeekerHomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Yakında gelecek özellikler için dialog gösterir
+  void _showComingSoonDialog(String featureName) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: AppColors.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                featureName,
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF374151),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Bu özellik yakında eklenecek! Geliştirme sürecinde olduğu için biraz daha bekleyiniz.',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Tamam',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 } 

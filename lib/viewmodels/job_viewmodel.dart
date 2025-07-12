@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/job_models.dart';
 import '../services/job_service.dart';
+import '../services/favorites_service.dart';
 import '../services/logger_service.dart';
 
 /// İş ilanları state management'ı
 class JobViewModel extends ChangeNotifier {
   final JobService _jobService = JobService();
+  final FavoritesService _favoritesService = FavoritesService();
 
   // Private state variables
   bool _isLoading = false;
@@ -26,6 +28,13 @@ class JobViewModel extends ChangeNotifier {
   bool _isApplying = false;
   String? _applySuccessMessage;
   String? _applyErrorMessage;
+
+  // Job favorite state variables
+  bool _isTogglingFavorite = false;
+  final Map<int, bool> _favoriteStates = {};
+  final Map<int, bool> _favoriteToggleStates = {};
+  String? _favoriteSuccessMessage;
+  String? _favoriteErrorMessage;
 
   // Public getters
   bool get isLoading => _isLoading;
@@ -48,6 +57,22 @@ class JobViewModel extends ChangeNotifier {
   String? get applySuccessMessage => _applySuccessMessage;
   String? get applyErrorMessage => _applyErrorMessage;
   bool get hasApplyError => _applyErrorMessage != null;
+
+  // Job favorite getters
+  bool get isTogglingFavorite => _isTogglingFavorite;
+  String? get favoriteSuccessMessage => _favoriteSuccessMessage;
+  String? get favoriteErrorMessage => _favoriteErrorMessage;
+  bool get hasFavoriteError => _favoriteErrorMessage != null;
+
+  /// Belirli bir işin favori durumunu döner
+  bool isJobFavorite(int jobId) {
+    return _favoriteStates[jobId] ?? false;
+  }
+
+  /// Belirli bir işin favori durumu değiştiriliyor mu kontrol eder
+  bool isJobFavoriteToggling(int jobId) {
+    return _favoriteToggleStates[jobId] ?? false;
+  }
 
   /// Loading state'i günceller
   void _setLoading(bool loading) {
@@ -142,6 +167,10 @@ class JobViewModel extends ChangeNotifier {
       if (response.isSuccessful && response.data != null) {
         _currentJobDetail = response.data;
         _jobDetailCache[jobId] = response.data!;
+        
+        // Favori durumunu güncelle
+        updateFavoriteStateFromJobDetail(jobId, response.data!.job.isFavorite);
+        
         logger.debug('İş detayı başarıyla yüklendi: ${response.data!.job.jobTitle}');
       } else {
         final errorMsg = response.displayMessage ?? 'İş detayı yüklenemedi';
@@ -391,6 +420,169 @@ class JobViewModel extends ChangeNotifier {
     ).toList();
   }
 
+  /// Favori state'i güncellemek için metodlar
+  void _setFavoriteTogglingState(bool toggling) {
+    _isTogglingFavorite = toggling;
+    notifyListeners();
+  }
+
+  /// Belirli bir işin favori toggle state'ini günceller
+  void _setJobFavoriteToggling(int jobId, bool toggling) {
+    _favoriteToggleStates[jobId] = toggling;
+    notifyListeners();
+  }
+
+  /// Favori success mesajını günceller
+  void _setFavoriteSuccess(String? message) {
+    _favoriteSuccessMessage = message;
+    _favoriteErrorMessage = null;
+    notifyListeners();
+  }
+
+  /// Favori error mesajını günceller
+  void _setFavoriteError(String? error) {
+    _favoriteErrorMessage = error;
+    _favoriteSuccessMessage = null;
+    notifyListeners();
+  }
+
+  /// Favori mesajlarını temizler
+  void clearFavoriteMessages() {
+    _favoriteSuccessMessage = null;
+    _favoriteErrorMessage = null;
+    notifyListeners();
+  }
+
+  /// Belirli bir işin favori durumunu günceller
+  void _updateJobFavoriteState(int jobId, bool isFavorite) {
+    _favoriteStates[jobId] = isFavorite;
+    
+    // Job detail'deki favori durumunu da güncelle
+    if (_currentJobDetail != null && _currentJobDetail!.job.jobID == jobId) {
+      _currentJobDetail!.job.isFavorite = isFavorite;
+    }
+    
+    // Cache'deki favori durumunu da güncelle
+    if (_jobDetailCache.containsKey(jobId)) {
+      _jobDetailCache[jobId]!.job.isFavorite = isFavorite;
+    }
+    
+    notifyListeners();
+  }
+
+  /// İş ilanının favori durumunu toggle eder
+  /// [jobId] - İş ID'si
+  /// [currentFavoriteState] - Mevcut favori durumu
+  Future<bool> toggleJobFavorite(int jobId, bool currentFavoriteState) async {
+    try {
+      _setJobFavoriteToggling(jobId, true);
+      clearFavoriteMessages();
+      
+      final newFavoriteState = !currentFavoriteState;
+      
+      logger.debug('İş favorileme durumu değiştiriliyor - ID: $jobId, Yeni durum: $newFavoriteState');
+      
+      // Optimistic update
+      _updateJobFavoriteState(jobId, newFavoriteState);
+      
+      // API çağrısı
+      final success = await _favoritesService.toggleJobFavorite(jobId, newFavoriteState);
+      
+      if (success) {
+        logger.debug('İş favorileme durumu başarıyla değiştirildi');
+        final message = newFavoriteState ? 'İlan favorilere eklendi' : 'İlan favorilerden çıkarıldı';
+        _setFavoriteSuccess(message);
+        return true;
+      } else {
+        logger.warning('İş favorileme durumu değiştirilemedi');
+        // Rollback optimistic update
+        _updateJobFavoriteState(jobId, currentFavoriteState);
+        _setFavoriteError('Favori durumu değiştirilemedi. Lütfen tekrar deneyin.');
+        return false;
+      }
+    } catch (e) {
+      logger.error('İş favorileme hatası - ViewModel: $e');
+      // Rollback optimistic update
+      _updateJobFavoriteState(jobId, currentFavoriteState);
+      _setFavoriteError('Favori durumu değiştirilirken beklenmedik bir hata oluştu.');
+      return false;
+    } finally {
+      _setJobFavoriteToggling(jobId, false);
+    }
+  }
+
+  /// Bir işi favorilere ekler
+  Future<bool> addJobToFavorites(int jobId) async {
+    try {
+      _setJobFavoriteToggling(jobId, true);
+      clearFavoriteMessages();
+      
+      logger.debug('İş favorilere ekleniyor - ID: $jobId');
+      
+      final response = await _favoritesService.addJobToFavorites(jobId);
+      
+      if (response.isSuccessful) {
+        logger.debug('İş başarıyla favorilere eklendi');
+        _updateJobFavoriteState(jobId, true);
+        _setFavoriteSuccess(response.displayMessage ?? 'İlan favorilere eklendi');
+        return true;
+      } else {
+        logger.warning('İş favorilere eklenemedi: ${response.errorMessage}');
+        _setFavoriteError(response.displayMessage ?? 'İlan favorilere eklenemedi');
+        return false;
+      }
+    } catch (e) {
+      logger.error('İş favorilere ekleme hatası - ViewModel: $e');
+      _setFavoriteError('İlan favorilere eklenirken beklenmedik bir hata oluştu.');
+      return false;
+    } finally {
+      _setJobFavoriteToggling(jobId, false);
+    }
+  }
+
+  /// Bir işi favorilerden çıkarır
+  Future<bool> removeJobFromFavorites(int jobId) async {
+    try {
+      _setJobFavoriteToggling(jobId, true);
+      clearFavoriteMessages();
+      
+      logger.debug('İş favorilerden çıkarılıyor - ID: $jobId');
+      
+      final response = await _favoritesService.removeJobFromFavorites(jobId);
+      
+      if (response.isSuccessful) {
+        logger.debug('İş başarıyla favorilerden çıkarıldı');
+        _updateJobFavoriteState(jobId, false);
+        _setFavoriteSuccess(response.displayMessage ?? 'İlan favorilerden çıkarıldı');
+        return true;
+      } else {
+        logger.warning('İş favorilerden çıkarılamadı: ${response.errorMessage}');
+        _setFavoriteError(response.displayMessage ?? 'İlan favorilerden çıkarılamadı');
+        return false;
+      }
+    } catch (e) {
+      logger.error('İş favorilerden çıkarma hatası - ViewModel: $e');
+      _setFavoriteError('İlan favorilerden çıkarılırken beklenmedik bir hata oluştu.');
+      return false;
+    } finally {
+      _setJobFavoriteToggling(jobId, false);
+    }
+  }
+
+  /// Favori durumlarını job detail'dan günceller
+  void updateFavoriteStateFromJobDetail(int jobId, bool isFavorite) {
+    _favoriteStates[jobId] = isFavorite;
+  }
+
+  /// Favori state'lerini temizler
+  void clearFavoriteStates() {
+    _favoriteStates.clear();
+    _favoriteToggleStates.clear();
+    _favoriteSuccessMessage = null;
+    _favoriteErrorMessage = null;
+    notifyListeners();
+  }
+
   /// State'i temizler
   void clearData() {
     _jobListings.clear();
@@ -400,6 +592,7 @@ class JobViewModel extends ChangeNotifier {
     _isLoading = false;
     _isRefreshing = false;
     clearJobDetailCache();
+    clearFavoriteStates();
     notifyListeners();
   }
 } 

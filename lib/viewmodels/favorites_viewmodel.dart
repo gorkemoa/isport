@@ -145,16 +145,16 @@ class FavoritesViewModel extends ChangeNotifier {
       logger.info('İş favorileme durumu değiştiriliyor', 
                   extra: {'jobId': jobId, 'newStatus': newFavoriteStatus});
 
-      final response = await _favoritesService.toggleJobFavorite(jobId, newFavoriteStatus);
+      final success = await _favoritesService.toggleJobFavorite(jobId, newFavoriteStatus);
 
-      if (response.success) {
+      if (success) {
         // UI'yi hemen güncelle (optimistic update)
         _updateFavoriteStatusInState(jobId, newFavoriteStatus);
         logger.info('İş favorileme durumu başarıyla güncellendi', 
                    extra: {'jobId': jobId, 'isFavorite': newFavoriteStatus});
         return true;
       } else {
-        final errorMsg = response.displayMessage ?? 'Favorileme durumu güncellenemedi';
+        final errorMsg = 'Favorileme durumu güncellenemedi';
         _setError(errorMsg);
         logger.warning('İş favorileme hatası', 
                       extra: {'jobId': jobId, 'error': errorMsg});

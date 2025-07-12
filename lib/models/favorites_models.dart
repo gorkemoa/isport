@@ -386,3 +386,178 @@ class FavoritesFilter {
            showRecentOnly;
   }
 } 
+
+/// İş favoriye ekleme istegi modeli
+class JobFavoriteAddRequest {
+  final String userToken;
+  final int jobID;
+
+  JobFavoriteAddRequest({
+    required this.userToken,
+    required this.jobID,
+  });
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'userToken': userToken,
+      'jobID': jobID,
+    };
+  }
+}
+
+/// İş favoriden çıkarma istegi modeli
+class JobFavoriteRemoveRequest {
+  final String userToken;
+  final int jobID;
+
+  JobFavoriteRemoveRequest({
+    required this.userToken,
+    required this.jobID,
+  });
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'userToken': userToken,
+      'jobID': jobID,
+    };
+  }
+}
+
+/// İş favoriye ekleme/çıkarma yanıt verisi
+class JobFavoriteActionData {
+  final String message;
+
+  JobFavoriteActionData({
+    required this.message,
+  });
+
+  /// JSON'dan JobFavoriteActionData oluşturur
+  factory JobFavoriteActionData.fromJson(Map<String, dynamic> json) {
+    return JobFavoriteActionData(
+      message: json['message'] ?? '',
+    );
+  }
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+    };
+  }
+}
+
+/// İş favoriye ekleme yanıtı modeli
+class JobFavoriteAddResponse {
+  final bool error;
+  final bool success;
+  final JobFavoriteActionData? data;
+  final String? status410;
+  final String? status417;
+  final String errorMessage;
+  final bool isTokenError;
+
+  JobFavoriteAddResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+    this.status417,
+    required this.errorMessage,
+    this.isTokenError = false,
+  });
+
+  /// JSON'dan JobFavoriteAddResponse oluşturur
+  factory JobFavoriteAddResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
+    return JobFavoriteAddResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      data: json['data'] != null ? JobFavoriteActionData.fromJson(json['data']) : null,
+      status410: json['410'],
+      status417: json['417'],
+      errorMessage: json['error_message'] ?? json['417'] ?? '',
+      isTokenError: isTokenError,
+    );
+  }
+
+  /// İstek başarılı mı kontrol eder (410 status başarılı demektir)
+  bool get isSuccessful => status410 != null || (!error && success);
+
+  /// Hata mesajını alır
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (status417 != null) return status417;
+    if (isSuccessful && data != null) return data!.message;
+    return errorMessage.isNotEmpty ? errorMessage : null;
+  }
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
+}
+
+/// İş favoriden çıkarma yanıtı modeli
+class JobFavoriteRemoveResponse {
+  final bool error;
+  final bool success;
+  final JobFavoriteActionData? data;
+  final String? status410;
+  final String? status417;
+  final String errorMessage;
+  final bool isTokenError;
+
+  JobFavoriteRemoveResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+    this.status417,
+    required this.errorMessage,
+    this.isTokenError = false,
+  });
+
+  /// JSON'dan JobFavoriteRemoveResponse oluşturur
+  factory JobFavoriteRemoveResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
+    return JobFavoriteRemoveResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      data: json['data'] != null ? JobFavoriteActionData.fromJson(json['data']) : null,
+      status410: json['410'],
+      status417: json['417'],
+      errorMessage: json['error_message'] ?? json['417'] ?? '',
+      isTokenError: isTokenError,
+    );
+  }
+
+  /// İstek başarılı mı kontrol eder (410 status başarılı demektir)
+  bool get isSuccessful => status410 != null || (!error && success);
+
+  /// Hata mesajını alır
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (status417 != null) return status417;
+    if (isSuccessful && data != null) return data!.message;
+    return errorMessage.isNotEmpty ? errorMessage : null;
+  }
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
+} 

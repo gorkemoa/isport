@@ -10,7 +10,8 @@ import 'logger_service.dart';
 class FavoritesService {
   static const String _baseUrl = 'https://api.rivorya.com/isport';
   static const String _favoritesEndpoint = '/service/user/account';
-  static const String _toggleFavoriteEndpoint = '/service/user/account/favorite';
+  static const String _addFavoriteEndpoint = '/service/user/account/jobFavoriteAdd';
+  static const String _removeFavoriteEndpoint = '/service/user/account/jobFavoriteRemove';
 
   /// Timeout süreleri
   static const Duration _connectTimeout = Duration(seconds: 10);
@@ -105,23 +106,22 @@ class FavoritesService {
     }
   }
 
-  /// Favori ekleme/çıkarma durumunu değiştirir
+  /// İş ilanını favoriye ekler
   /// [jobId] - İş ID'si
-  /// [isFavorite] - Favorileme durumu
-  Future<ToggleFavoriteResponse> toggleJobFavorite(int jobId, bool isFavorite) async {
+  /// Returns JobFavoriteAddResponse with status code handling (410 = success, 417 = error)
+  Future<JobFavoriteAddResponse> addJobToFavorites(int jobId) async {
     final stopwatch = Stopwatch()..start();
     
     try {
-      logger.info('İş favorileme durumu değiştiriliyor', 
-                  extra: {'jobId': jobId, 'isFavorite': isFavorite});
+      logger.info('İş ilanı favoriye ekleniyor', extra: {'jobId': jobId});
       
       // Kullanıcı token'ını al
       final prefs = await SharedPreferences.getInstance();
       final userToken = prefs.getString('userToken') ?? '';
       
       if (userToken.isEmpty) {
-        logger.warning('User token bulunamadı');
-        return ToggleFavoriteResponse(
+        logger.warning('User token bulunamadı - favoriye ekleme');
+        return JobFavoriteAddResponse(
           error: true,
           success: false,
           errorMessage: 'Oturum açmanız gerekiyor',
@@ -130,16 +130,16 @@ class FavoritesService {
       }
 
       // API isteği hazırla
-      final uri = Uri.parse('$_baseUrl$_toggleFavoriteEndpoint');
-      final headers = AuthService.getHeaders(userToken: userToken);
+      final uri = Uri.parse('$_baseUrl$_addFavoriteEndpoint');
+      final headers = AuthService.getHeaders();
       
-      final request = ToggleFavoriteRequest(
+      final request = JobFavoriteAddRequest(
         userToken: userToken,
         jobID: jobId,
-        isFavorite: isFavorite,
       );
 
-      logger.debug('API isteği gönderiliyor', extra: {'url': uri.toString(), 'body': request.toJson()});
+      logger.debug('Favoriye ekleme API isteği gönderiliyor', 
+                   extra: {'url': uri.toString(), 'body': request.toJson()});
 
       // HTTP isteği gönder
       final response = await http.post(
@@ -158,29 +158,148 @@ class FavoritesService {
         duration: stopwatch.elapsed,
       );
 
-      logger.debug('API yanıtı alındı', extra: {'statusCode': response.statusCode});
+      logger.debug('Favoriye ekleme API yanıtı alındı', 
+                   extra: {'statusCode': response.statusCode});
 
       // Yanıtı parse et
-      final favoriteResponse = _parseToggleFavoriteResponse(response);
+      final favoriteResponse = _parseJobFavoriteAddResponse(response);
       
       // Başarılı sonuç ise cache'i güncelle
-      if (favoriteResponse.success && _cache != null) {
-        _updateFavoriteInCache(jobId, isFavorite);
-        logger.debug('Favori durumu cache\'de güncellendi', extra: {'jobId': jobId});
+      if (favoriteResponse.isSuccessful) {
+        _clearCache(); // Cache'i temizle ki yeniden çekilsin
+        logger.debug('İş favoriye eklendi - cache temizlendi', extra: {'jobId': jobId});
       }
 
       return favoriteResponse;
 
     } catch (e, stackTrace) {
       stopwatch.stop();
-      logger.error('İş favorileme hatası', 
+      logger.error('İş favoriye ekleme hatası', 
                    error: e, stackTrace: stackTrace, 
                    extra: {'jobId': jobId, 'duration': stopwatch.elapsed.inMilliseconds});
-      return ToggleFavoriteResponse(
+      return JobFavoriteAddResponse(
         error: true,
         success: false,
         errorMessage: _getErrorMessage(e),
       );
+    }
+  }
+
+  /// İş ilanını favoriden çıkarır
+  /// [jobId] - İş ID'si
+  /// Returns JobFavoriteRemoveResponse with status code handling (410 = success, 417 = error)
+  Future<JobFavoriteRemoveResponse> removeJobFromFavorites(int jobId) async {
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      logger.info('İş ilanı favoriden çıkarılıyor', extra: {'jobId': jobId});
+      
+      // Kullanıcı token'ını al
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('userToken') ?? '';
+      
+      if (userToken.isEmpty) {
+        logger.warning('User token bulunamadı - favoriden çıkarma');
+        return JobFavoriteRemoveResponse(
+          error: true,
+          success: false,
+          errorMessage: 'Oturum açmanız gerekiyor',
+          isTokenError: true,
+        );
+      }
+
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl$_removeFavoriteEndpoint');
+      final headers = AuthService.getHeaders();
+      
+      final request = JobFavoriteRemoveRequest(
+        userToken: userToken,
+        jobID: jobId,
+      );
+
+      logger.debug('Favoriden çıkarma API isteği gönderiliyor', 
+                   extra: {'url': uri.toString(), 'body': request.toJson()});
+
+      // HTTP isteği gönder
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(_connectTimeout);
+
+      stopwatch.stop();
+
+      // Network request'i logla
+      logger.logNetworkRequest(
+        method: 'POST',
+        url: uri.toString(),
+        statusCode: response.statusCode,
+        duration: stopwatch.elapsed,
+      );
+
+      logger.debug('Favoriden çıkarma API yanıtı alındı', 
+                   extra: {'statusCode': response.statusCode});
+
+      // Yanıtı parse et
+      final favoriteResponse = _parseJobFavoriteRemoveResponse(response);
+      
+      // Başarılı sonuç ise cache'i güncelle
+      if (favoriteResponse.isSuccessful) {
+        _clearCache(); // Cache'i temizle ki yeniden çekilsin
+        logger.debug('İş favoriden çıkarıldı - cache temizlendi', extra: {'jobId': jobId});
+      }
+
+      return favoriteResponse;
+
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      logger.error('İş favoriden çıkarma hatası', 
+                   error: e, stackTrace: stackTrace, 
+                   extra: {'jobId': jobId, 'duration': stopwatch.elapsed.inMilliseconds});
+      return JobFavoriteRemoveResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
+  /// Favori ekleme/çıkarma durumunu optimize edilmiş şekilde değiştirir
+  /// [jobId] - İş ID'si
+  /// [isFavorite] - Favorileme durumu (true: ekle, false: çıkar)
+  Future<bool> toggleJobFavorite(int jobId, bool isFavorite) async {
+    try {
+      logger.info('İş favorileme durumu değiştiriliyor', 
+                  extra: {'jobId': jobId, 'isFavorite': isFavorite});
+      
+      if (isFavorite) {
+        // Favoriye ekle
+        final response = await addJobToFavorites(jobId);
+        if (response.isSuccessful) {
+          logger.debug('İş başarıyla favoriye eklendi', extra: {'jobId': jobId});
+          return true;
+        } else {
+          logger.warning('İş favoriye eklenemedi', 
+                        extra: {'jobId': jobId, 'error': response.displayMessage});
+          return false;
+        }
+      } else {
+        // Favoriden çıkar
+        final response = await removeJobFromFavorites(jobId);
+        if (response.isSuccessful) {
+          logger.debug('İş başarıyla favoriden çıkarıldı', extra: {'jobId': jobId});
+          return true;
+        } else {
+          logger.warning('İş favoriden çıkarılamadı', 
+                        extra: {'jobId': jobId, 'error': response.displayMessage});
+          return false;
+        }
+      }
+    } catch (e, stackTrace) {
+      logger.error('İş favorileme durumu değiştirme hatası', 
+                   error: e, stackTrace: stackTrace, 
+                   extra: {'jobId': jobId, 'isFavorite': isFavorite});
+      return false;
     }
   }
 
@@ -263,21 +382,55 @@ class FavoritesService {
     }
   }
 
-  /// HTTP yanıtını ToggleFavoriteResponse'a çevirir
-  ToggleFavoriteResponse _parseToggleFavoriteResponse(http.Response response) {
+  /// Exception'ı kullanıcı dostu hata mesajına çevirir
+  String _getErrorMessage(dynamic error) {
+    if (error.toString().contains('TimeoutException')) {
+      return 'Bağlantı zaman aşımına uğradı';
+    } else if (error.toString().contains('SocketException')) {
+      return 'İnternet bağlantınızı kontrol edin';
+    } else if (error.toString().contains('HttpException')) {
+      return 'Sunucu hatası';
+    } else if (error.toString().contains('FormatException')) {
+      return 'Veri formatı hatası';
+    } else {
+      return 'Bilinmeyen hata oluştu';
+    }
+  }
+
+  /// HTTP yanıtını JobFavoriteAddResponse'a çevirir
+  JobFavoriteAddResponse _parseJobFavoriteAddResponse(http.Response response) {
     try {
       final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
       
-      // Token hatası kontrolü
-      if (response.statusCode == 403) {
-        return ToggleFavoriteResponse.fromJson(jsonResponse, isTokenError: true);
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return JobFavoriteAddResponse(
+          error: true,
+          success: false,
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
       }
       
-      return ToggleFavoriteResponse.fromJson(jsonResponse);
-
-    } catch (e, stackTrace) {
-      logger.error('JSON parse hatası', error: e, stackTrace: stackTrace);
-      return ToggleFavoriteResponse(
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return JobFavoriteAddResponse.fromJson(jsonResponse);
+      }
+      
+      // Varsayılan hata durumu
+      return JobFavoriteAddResponse(
+        error: true,
+        success: false,
+        errorMessage: jsonResponse['error_message'] ?? 'Bilinmeyen hata',
+      );
+      
+    } catch (e) {
+      logger.error('JobFavoriteAddResponse parse hatası: $e');
+      return JobFavoriteAddResponse(
         error: true,
         success: false,
         errorMessage: 'Veri işleme hatası',
@@ -285,20 +438,48 @@ class FavoritesService {
     }
   }
 
-  /// Exception'ı kullanıcı dostu hata mesajına çevirir
-  String _getErrorMessage(dynamic error) {
-    if (error.toString().contains('TimeoutException') || 
-        error.toString().contains('timeout')) {
-      return 'Bağlantı zaman aşımı. Lütfen tekrar deneyin.';
-    } else if (error.toString().contains('SocketException') || 
-               error.toString().contains('No address associated')) {
-      return 'İnternet bağlantısını kontrol edin.';
-    } else if (error.toString().contains('HandshakeException')) {
-      return 'Güvenli bağlantı hatası.';
-    } else {
-      return 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
+  /// HTTP yanıtını JobFavoriteRemoveResponse'a çevirir
+  JobFavoriteRemoveResponse _parseJobFavoriteRemoveResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return JobFavoriteRemoveResponse(
+          error: true,
+          success: false,
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
+      }
+      
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return JobFavoriteRemoveResponse.fromJson(jsonResponse);
+      }
+      
+      // Varsayılan hata durumu
+      return JobFavoriteRemoveResponse(
+        error: true,
+        success: false,
+        errorMessage: jsonResponse['error_message'] ?? 'Bilinmeyen hata',
+      );
+      
+    } catch (e) {
+      logger.error('JobFavoriteRemoveResponse parse hatası: $e');
+      return JobFavoriteRemoveResponse(
+        error: true,
+        success: false,
+        errorMessage: 'Veri işleme hatası',
+      );
     }
   }
+
+
 
   /// Cache istatistiklerini döner
   Map<String, dynamic> getCacheStats() {
@@ -340,5 +521,12 @@ class FavoritesService {
   List<FavoriteJobModel> getFilteredFavoritesFromCache(FavoritesFilter filter) {
     if (_cache == null) return [];
     return filter.applyFilter(_cache!.favorites);
+  }
+
+  /// Cache'i temizler
+  void _clearCache() {
+    _cache = null;
+    _cacheTimestamp = null;
+    logger.debug('Favoriler cache temizlendi');
   }
 } 

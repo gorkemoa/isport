@@ -8,6 +8,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../models/job_models.dart';
 import '../../viewmodels/job_viewmodel.dart';
 import '../../widget/job_widgets.dart';
+import '../../widget/apply_job_bottom_sheet.dart';
 import 'job_detail_screen.dart';
 
 /// İş ilanları listesi sayfası
@@ -94,7 +95,7 @@ class _JobListingScreenState extends State<JobListingScreen>
               _buildAppBar(jobVM),
               _buildSearchBar(),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _buildContent(jobVM),
@@ -383,11 +384,17 @@ class _JobListingScreenState extends State<JobListingScreen>
               child: FadeInAnimation(
                 child: Consumer<JobViewModel>(
                   builder: (context, jobVM, child) {
+                    final isFavorite = jobVM.isJobFavorite(job.jobID);
+                    final isToggling = jobVM.isJobFavoriteToggling(job.jobID);
+                    
                     return JobCard(
                       job: job,
                       company: companyData.company,
                       onTap: () => _showJobDetail(job, companyData.company),
                       onApply: () => _showApplyBottomSheet(context, job, jobVM),
+                      onFavoriteToggle: () => jobVM.toggleJobFavorite(job.jobID, isFavorite),
+                      isFavorite: isFavorite,
+                      isFavoriteToggling: isToggling,
                     );
                   },
                 ),
@@ -402,7 +409,7 @@ class _JobListingScreenState extends State<JobListingScreen>
       onRefresh: () => context.read<JobViewModel>().refreshJobs(),
       color:   AppColors.primary,
       child: ListView(
-        padding: const EdgeInsets.only(top: 4, bottom: 150, left: 8, right: 8),
+        padding: const EdgeInsets.only(top: 4, bottom: 160, left: 8, right: 8),
         children: allJobs.isNotEmpty ? allJobs : [
           const EmptyJobsWidget(message: 'İş ilanı bulunamadı'),
         ],
@@ -644,7 +651,7 @@ class _CompanyJobsScreen extends StatelessWidget {
       
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 80),
         itemCount: companyData.jobs.length,
         itemBuilder: (context, index) {
           final job = companyData.jobs[index];
@@ -657,12 +664,18 @@ class _CompanyJobsScreen extends StatelessWidget {
               child: FadeInAnimation(
                 child: Consumer<JobViewModel>(
                   builder: (context, jobVM, child) {
+                    final isFavorite = jobVM.isJobFavorite(job.jobID);
+                    final isToggling = jobVM.isJobFavoriteToggling(job.jobID);
+                    
                     return JobCard(
                       job: job,
                       company: companyData.company,
                       showCompanyInfo: false,
                       onTap: () => JobDetailBottomSheet.show(context, job.jobID),
                       onApply: () => _showApplyBottomSheetInCompanyScreen(context, job, jobVM),
+                      onFavoriteToggle: () => jobVM.toggleJobFavorite(job.jobID, isFavorite),
+                      isFavorite: isFavorite,
+                      isFavoriteToggling: isToggling,
                     );
                   },
                 ),

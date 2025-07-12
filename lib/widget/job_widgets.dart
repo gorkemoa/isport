@@ -7,14 +7,99 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../models/job_models.dart';
 import '../utils/app_constants.dart';
 
+/// Favori durum mesajlarını gösteren widget
+class FavoriteStatusWidget extends StatelessWidget {
+  final String? successMessage;
+  final String? errorMessage;
+  final VoidCallback? onDismiss;
+
+  const FavoriteStatusWidget({
+    super.key,
+    this.successMessage,
+    this.errorMessage,
+    this.onDismiss,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMessage = successMessage != null || errorMessage != null;
+    
+    if (!hasMessage) return const SizedBox.shrink();
+
+    final isError = errorMessage != null;
+    final message = isError ? errorMessage! : successMessage!;
+
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 16,
+      left: 16,
+      right: 16,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isError ? Colors.red[50] : Colors.green[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isError ? Colors.red[200]! : Colors.green[200]!,
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              size: 20,
+              color: isError ? Colors.red[600] : Colors.green[600],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isError ? Colors.red[700] : Colors.green[700],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (onDismiss != null) ...[
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: onDismiss,
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: isError ? Colors.red[600] : Colors.green[600],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: -0.5, end: 0);
+  }
+}
+
 /// Modern iş ilanı kartı widget'ı
 class JobCard extends StatelessWidget {
   final JobModel job;
   final CompanyDetailModel company;
   final VoidCallback? onTap;
   final VoidCallback? onApply;
+  final VoidCallback? onFavoriteToggle;
   final bool showCompanyInfo;
   final bool showApplyButton;
+  final bool showFavoriteButton;
+  final bool isFavorite;
+  final bool isFavoriteToggling;
 
   const JobCard({
     super.key,
@@ -22,8 +107,12 @@ class JobCard extends StatelessWidget {
     required this.company,
     this.onTap,
     this.onApply,
+    this.onFavoriteToggle,
     this.showCompanyInfo = true,
     this.showApplyButton = true,
+    this.showFavoriteButton = true,
+    this.isFavorite = false,
+    this.isFavoriteToggling = false,
   });
 
   @override
@@ -54,9 +143,15 @@ class JobCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Şirket bilgileri
+            // Şirket bilgileri ve favori butonu
             if (showCompanyInfo) ...[
-              _buildCompanyHeader(),
+              Row(
+                children: [
+                  Expanded(child: _buildCompanyHeader()),
+                  if (showFavoriteButton && onFavoriteToggle != null)
+                    _buildFavoriteButton(),
+                ],
+              ),
               const SizedBox(height: 10),
             ],
             
@@ -87,7 +182,7 @@ class JobCard extends StatelessWidget {
                 _buildInfoChip(
                   icon: Icons.schedule_outlined,
                   text: job.showDate,
-                  color:   (AppColors.primary),
+                  color: AppColors.primary,
                 ),
               ],
             ),
@@ -201,6 +296,44 @@ class JobCard extends StatelessWidget {
         ),
       ),
     ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
+  }
+
+  /// Favori butonu oluşturur
+  Widget _buildFavoriteButton() {
+    return GestureDetector(
+      onTap: isFavoriteToggling ? null : () {
+        HapticFeedback.lightImpact();
+        onFavoriteToggle?.call();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: isFavorite ? AppColors.primary.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isFavorite ? AppColors.primary.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: isFavoriteToggling
+            ? SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isFavorite ? AppColors.primary : Colors.grey[600]!,
+                  ),
+                ),
+              )
+            : Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                size: 12,
+                color: isFavorite ? AppColors.primary : Colors.grey[600],
+              ),
+      ),
+    ).animate(target: isFavorite ? 1 : 0)
+     .scale(duration: 200.ms, curve: Curves.easeOut);
   }
 
   Widget _buildCompanyHeader() {
