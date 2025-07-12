@@ -266,4 +266,53 @@ class JobService {
       return 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
     }
   }
+
+  /// Bir işe başvuru yapar
+  /// [jobId] - İş ID'si
+  Future<BaseResponse> applyToJob(int jobId) async {
+    try {
+      logger.debug('İşe başvuru yapılıyor - İş ID: $jobId');
+
+      // Kullanıcı token'ını al
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('userToken') ?? '';
+
+      if (userToken.isEmpty) {
+        logger.warning('User token bulunamadı');
+        return BaseResponse(
+          error: true,
+          success: false,
+          errorMessage: 'Oturum açmanız gerekiyor',
+          isTokenError: true,
+        );
+      }
+
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl$_companyJobsEndpoint/$jobId/apply');
+      final headers = AuthService.getHeaders(userToken: userToken);
+
+      logger.debug('API isteği gönderiliyor: ${uri.toString()}');
+
+      // HTTP isteği gönder
+      final response = await http.post(
+        uri,
+        headers: headers,
+      ).timeout(_connectTimeout);
+
+      logger.debug('API yanıtı alındı - Status: ${response.statusCode}');
+      
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+      // Yanıtı parse et
+      return BaseResponse.fromJson(jsonResponse);
+
+    } catch (e) {
+      logger.error('İşe başvuru hatası: $e');
+      return BaseResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
 } 

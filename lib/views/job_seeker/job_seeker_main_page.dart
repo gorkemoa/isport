@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'job_seeker_home_screen.dart';
 import 'job_seeker_profile_screen.dart';
 import 'job_listing_screen.dart';
+import 'applications_screen.dart';
 
 /// İş arayan kullanıcılar için tab tabanlı ana sayfa.
 class JobSeekerMainPage extends StatefulWidget {
@@ -20,7 +21,7 @@ class _JobSeekerMainPageState extends State<JobSeekerMainPage> {
   late final List<Widget> _screens = const [
     JobSeekerHomeScreen(),
     JobListingScreen(),
-    _ApplicationsScreen(),
+    ApplicationsScreen(),
     _MessagesScreen(),
     JobSeekerProfileScreen(),
   ];
@@ -56,18 +57,6 @@ class _JobSeekerMainPageState extends State<JobSeekerMainPage> {
 
 // Aşağıdaki ekranlar şimdilik basit placeholder'lardır. Gerektiğinde detaylı
 // ekran bileşenlerine dönüştürülebilirler.
-
-class _ApplicationsScreen extends StatelessWidget {
-  const _ApplicationsScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFF8FAFC),
-      body: Center(child: Text('Başvurularım')),
-    );
-  }
-}
 
 class _MessagesScreen extends StatelessWidget {
   const _MessagesScreen();

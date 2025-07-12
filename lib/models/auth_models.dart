@@ -410,3 +410,34 @@ class GenericAuthResponse {
     return error_message;
   }
 }
+
+/// Genel API yanıtları için temel model
+class BaseResponse {
+  final bool error;
+  final bool success;
+  final String? errorMessage;
+  final bool isTokenError;
+
+  BaseResponse({
+    required this.error,
+    required this.success,
+    this.errorMessage,
+    this.isTokenError = false,
+  });
+
+  factory BaseResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
+    return BaseResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      errorMessage: json['error_message'] ?? json['errorMessage'],
+      isTokenError: isTokenError,
+    );
+  }
+
+  String? get displayMessage {
+    if (isTokenError) {
+      return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    }
+    return errorMessage;
+  }
+}

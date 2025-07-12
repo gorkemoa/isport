@@ -7,6 +7,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../models/job_models.dart';
 import '../../viewmodels/job_viewmodel.dart';
 import '../../utils/app_constants.dart';
+import 'company/company_detail_screen.dart';
 
 /// İş detayı bottom sheet
 class JobDetailBottomSheet extends StatelessWidget {
@@ -969,13 +970,11 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Center(
-                        child: Text(
-                          job.compName.isNotEmpty ? job.compName[0].toUpperCase() : 'S',
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
+                        child: Image.network(
+                          job.jobImage,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
@@ -996,30 +995,34 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Teknoloji',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
                         ],
                       ),
                     ),
                     
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Profili Gör',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey[700],
+                    InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CompanyDetailScreen(companyId: job.compID),
+                          ),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Profili Gör',
+                          style: GoogleFonts.inter(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey[700],
+                          ),
                         ),
                       ),
                     ),
@@ -1075,7 +1078,9 @@ class _JobDetailScreenState extends State<JobDetailScreen>
                 const SizedBox(height: 12),
                 _buildInfoRow('Lokasyon', job.formattedLocation, Icons.location_on_outlined),
                 const SizedBox(height: 12),
-                _buildInfoRow('İlan Tarihi', job.showDate, Icons.schedule),
+                _buildInfoRow('İlan Tarihi', '${job.showDate} - ${job.showDay}', Icons.schedule),
+                const SizedBox(height: 12),
+              
                 
                 if (job.isApplied) ...[
                   const SizedBox(height: 16),
@@ -1518,13 +1523,24 @@ class _JobDetailScreenState extends State<JobDetailScreen>
 }
 
 /// Sticky başvur butonu
-class _StickyApplyButton extends StatelessWidget {
+class _StickyApplyButton extends StatefulWidget {
   final JobDetailModel job;
 
   const _StickyApplyButton({required this.job});
 
   @override
+  State<_StickyApplyButton> createState() => _StickyApplyButtonState();
+}
+
+class _StickyApplyButtonState extends State<_StickyApplyButton> {
+  bool _isApplying = false;
+
+  @override
   Widget build(BuildContext context) {
+    // ViewModel'i al
+    final jobViewModel = context.watch<JobViewModel>();
+    final job = jobViewModel.currentJobDetail?.job;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1539,55 +1555,90 @@ class _StickyApplyButton extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            job.isApplied
-                ? Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Başvuru Yapıldı',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[600],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  )
-                : SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        // TODO: Implement job application
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        elevation: 0,
-                      ),
-                      child: Text(
-                        'Başvur',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+        child: job?.isApplied == true
+          ? Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.green[200]!),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 18,
+                    color: Colors.green[600],
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Bu ilana daha önce başvurdunuz',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.green[700],
                     ),
                   ),
-          ],
-        ),
+                ],
+              ),
+            )
+          : ElevatedButton(
+              onPressed: _isApplying 
+                ? null 
+                : () async {
+                    setState(() => _isApplying = true);
+                    try {
+                      final success = await jobViewModel.applyToJob(widget.job.jobID);
+                      if (success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Başvurunuz başarıyla alındı'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isApplying = false);
+                      }
+                    }
+                  },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: _isApplying
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    'Başvur',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+            ),
       ),
     );
+
+                
+                
+            
+          
+        
+      
+    
   }
 } 

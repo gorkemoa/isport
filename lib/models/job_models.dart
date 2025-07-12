@@ -152,6 +152,18 @@ class JobListingResponse {
     if (status417 != null) return status417;
     return errorMessage.isNotEmpty ? errorMessage : null;
   }
+
+  /// JobListingResponse'u JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
 }
 
 /// İş detayı verilerini temsil eden model
@@ -164,16 +176,18 @@ class JobDetailModel {
   final String districtName;
   final int compID;
   final String compName;
+  final String jobImage;
+  final String showDay;
   final String salaryMin;
-  final String salaryMax;
+  final String salaryMax; 
   final String salaryType;
   final String workType;
   final bool isHighlighted;
   final bool isActive;
   final String showDate;
   final String createDate;
-  final bool isApplied;
-  final bool isFavorite;
+  bool isApplied;
+  bool isFavorite;
   final List<String> benefits;
 
   JobDetailModel({
@@ -185,6 +199,8 @@ class JobDetailModel {
     required this.districtName,
     required this.compID,
     required this.compName,
+    required this.jobImage,
+    required this.showDay,
     required this.salaryMin,
     required this.salaryMax,
     required this.salaryType,
@@ -209,6 +225,8 @@ class JobDetailModel {
       districtName: json['districtName'] ?? '',
       compID: json['compID'] ?? 0,
       compName: json['compName'] ?? '',
+      jobImage: json['jobImage'] ?? '',
+      showDay: json['showDay'] ?? '',
       salaryMin: json['salaryMin'] ?? '',
       salaryMax: json['salaryMax'] ?? '',
       salaryType: json['salaryType'] ?? '',
@@ -237,6 +255,7 @@ class JobDetailModel {
       'districtName': districtName,
       'compID': compID,
       'compName': compName,
+      'jobImage': jobImage,
       'salaryMin': salaryMin,
       'salaryMax': salaryMax,
       'salaryType': salaryType,
@@ -316,7 +335,7 @@ class JobDetailData {
   factory JobDetailData.fromJson(Map<String, dynamic> json) {
     return JobDetailData(
       job: JobDetailModel.fromJson(json['job'] ?? {}),
-      similarJobs: (json['similarJobs'] as List<dynamic>?)
+      similarJobs: (json['similar_jobs'] as List<dynamic>?)
               ?.map((jobJson) => SimilarJobModel.fromJson(jobJson as Map<String, dynamic>))
               .toList() ??
           [],
@@ -327,7 +346,7 @@ class JobDetailData {
   Map<String, dynamic> toJson() {
     return {
       'job': job.toJson(),
-      'similarJobs': similarJobs.map((job) => job.toJson()).toList(),
+      'similar_jobs': similarJobs.map((job) => job.toJson()).toList(),
     };
   }
 }
@@ -365,7 +384,19 @@ class JobDetailResponse {
     );
   }
 
-  /// İstek başarılı mı kontrol eder (410 status başarılı demektir)
+  /// JobDetailResponse'u JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
+
+  /// İstek başarılı mı kontrol eder
   bool get isSuccessful => status410 != null || (!error && success);
 
   /// Hata mesajını alır

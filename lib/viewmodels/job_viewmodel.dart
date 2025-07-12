@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../models/job_models.dart';
 import '../services/job_service.dart';
@@ -97,6 +98,9 @@ class JobViewModel extends ChangeNotifier {
 
       final response = await _jobService.fetchJobDetail(jobId);
 
+      // API'den gelen tüm yanıtı logla
+      logger.info('API Yanıtı (Job ID: $jobId): ${jsonEncode(response.toJson())}');
+
       if (response.isSuccessful && response.data != null) {
         _currentJobDetail = response.data;
         _jobDetailCache[jobId] = response.data!;
@@ -113,6 +117,36 @@ class JobViewModel extends ChangeNotifier {
       _currentJobDetail = null;
     } finally {
       _setJobDetailLoading(false);
+    }
+  }
+
+  /// Bir işe başvuru yapar
+  Future<bool> applyToJob(int jobId) async {
+    try {
+      logger.debug('İşe başvuru yapılıyor - ViewModel - İş ID: $jobId');
+      final response = await _jobService.applyToJob(jobId);
+
+      if (response.success) {
+        logger.debug('İşe başvuru başarılı');
+        // State'i güncelle
+        if (_currentJobDetail != null && _currentJobDetail!.job.jobID == jobId) {
+          _currentJobDetail!.job.isApplied = true;
+          notifyListeners();
+        }
+        // Cache'i de güncelle
+        if (_jobDetailCache.containsKey(jobId)) {
+          _jobDetailCache[jobId]!.job.isApplied = true;
+        }
+        return true;
+      } else {
+        logger.warning('İşe başvuru başarısız: ${response.errorMessage}');
+        _setJobDetailError(response.displayMessage ?? 'Başvuru sırasında bir hata oluştu.');
+        return false;
+      }
+    } catch (e) {
+      logger.error('İşe başvuru hatası - ViewModel: $e');
+      _setJobDetailError('Başvuru sırasında beklenmedik bir hata oluştu.');
+      return false;
     }
   }
 
