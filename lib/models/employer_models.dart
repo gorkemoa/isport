@@ -581,9 +581,13 @@ class EmployerFavoriteApplicantModel {
       'favID': favID,
       'userID': userID,
       'jobID': jobID,
+      'appID': appID,
       'userName': userName,
+      'userEmail': userEmail,
+      'userPhone': userPhone,
       'jobTitle': jobTitle,
       'favDate': favDate,
+      'canShowContact': canShowContact,
     };
   }
 
