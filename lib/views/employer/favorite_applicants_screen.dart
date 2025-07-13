@@ -5,11 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:shimmer/shimmer.dart';
 import '../../models/employer_models.dart';
 import '../../viewmodels/employer_viewmodel.dart';
 import '../../utils/app_constants.dart';
-import '../../services/logger_service.dart';
 import 'application_detail_screen.dart';
 
 /// Firma favori adayları listeleme ekranı
@@ -67,19 +65,19 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
       backgroundColor: const Color(0xFFF9FAFB),
       body: Consumer<EmployerViewModel>(
         builder: (context, employerVM, child) {
-          return CustomScrollView(
-            slivers: [
-              _buildAppBar(employerVM),
-              _buildSearchBar(),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    _buildContent(employerVM),
-                  ]),
+          return RefreshIndicator(
+            onRefresh: () => _refreshData(employerVM),
+            color: AppColors.primary,
+            child: CustomScrollView(
+              slivers: [
+                _buildAppBar(employerVM),
+                _buildSearchBar(),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  sliver: _buildContent(employerVM),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),
@@ -270,15 +268,15 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
 
   Widget _buildContent(EmployerViewModel employerVM) {
     if (employerVM.isFavoriteApplicantsLoading && employerVM.favoriteApplicantsData == null) {
-      return _buildLoadingState();
+      return SliverToBoxAdapter(child: _buildLoadingState());
     }
 
     if (employerVM.hasFavoriteApplicantsError && employerVM.favoriteApplicantsData == null) {
-      return _buildErrorState(employerVM.favoriteApplicantsErrorMessage!, employerVM);
+      return SliverToBoxAdapter(child: _buildErrorState(employerVM.favoriteApplicantsErrorMessage!, employerVM));
     }
 
     if (!employerVM.hasFavoriteApplicants) {
-      return _buildEmptyState();
+      return SliverToBoxAdapter(child: _buildEmptyState());
     }
 
     final filteredApplicants = _isSearchActive 
@@ -286,16 +284,12 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
         : employerVM.favoriteApplicantsData!.sortedFavorites;
 
     if (_isSearchActive && filteredApplicants.isEmpty) {
-      return _buildEmptySearchState();
+      return SliverToBoxAdapter(child: _buildEmptySearchState());
     }
 
-    return RefreshIndicator(
-      onRefresh: () => _refreshData(employerVM),
-      color: AppColors.primary,
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 4, bottom: 16),
-        itemCount: filteredApplicants.length,
-        itemBuilder: (context, index) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
           final applicant = filteredApplicants[index];
           
           return AnimationConfiguration.staggeredList(
@@ -308,11 +302,13 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
                   applicant: applicant,
                   onTap: () => _showApplicantDetail(applicant),
                   onJobTap: () => _showJobDetail(applicant.jobID),
+                  onRemoveFavorite: () => _removeFromFavorites(applicant, employerVM),
                 ),
               ),
             ),
           );
         },
+        childCount: filteredApplicants.length,
       ),
     );
   }
@@ -820,6 +816,123 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
     }
   }
 
+  /// Favori adayı favorilerden çıkarır
+  Future<void> _removeFromFavorites(EmployerFavoriteApplicantModel applicant, EmployerViewModel employerVM) async {
+    try {
+      // Haptic feedback
+      HapticFeedback.lightImpact();
+      
+      // Onay dialogu göster
+      final shouldRemove = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
+            'Favorilerden Çıkar',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            '${applicant.userName} adayını favorilerden çıkarmak istediğinizden emin misiniz?',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'İptal',
+                style: GoogleFonts.inter(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              child: Text(
+                'Çıkar',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRemove == true) {
+        // Loading göster
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text('Favorilerden çıkarılıyor...'),
+              ],
+            ),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Favori çıkarma işlemini gerçekleştir
+        final success = await employerVM.toggleFavoriteApplicant(
+          applicant.jobID,
+          applicant.userID,
+        );
+
+        if (success && mounted) {
+          // Başarılı işlem sonrası listeyi yenile
+          await employerVM.loadFavoriteApplicants();
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${applicant.userName} favorilerden çıkarıldı'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Favori çıkarma işlemi başarısız oldu'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   /// Başvuru detayı ekranına yönlendirir
   void _navigateToApplicationDetail(int appId, String jobTitle) {
     Navigator.of(context).push(
@@ -836,146 +949,137 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
   Widget _buildFavoriteApplicantCard(EmployerFavoriteApplicantModel applicant) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
+      child: Material(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Aday bilgileri
-          Padding(
+        elevation: 0,
+        child: InkWell(
+          onTap: () => _showApplicantDetail(applicant),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 80),
             padding: const EdgeInsets.all(16),
-            child: Row(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[200]!),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Aday avatar'ı
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Center(
-                    child: Text(
-                      applicant.userInitials,
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Aday bilgileri
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        applicant.userName,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                      child: Text(
+                        applicant.userInitials,
                         style: GoogleFonts.inter(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.primary,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        applicant.jobTitle,
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            applicant.userName,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF374151),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          InkWell(
+                            onTap: () => _showJobDetail(applicant.jobID),
+                            borderRadius: BorderRadius.circular(4),
+                            child: Text(
+                              applicant.jobTitle,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.red.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.favorite,
+                            size: 12,
+                            color: Colors.red[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Favori',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.red[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule,
+                      size: 14,
+                      color: Colors.grey[500],
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        'Favori: ${applicant.formattedDate}',
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.grey[600],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Başvuru: ${applicant.formattedDate}',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Favori butonu
-                IconButton(
-                  onPressed: () => _toggleFavoriteApplicant(applicant.jobID, applicant.userID),
-                  icon: Icon(
-                    Icons.favorite,
-                    color: Colors.red[400],
-                    size: 24,
-                  ),
-                  tooltip: 'Favorilerden çıkar',
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: Colors.grey[400],
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
-          // Aksiyon butonları
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Detay görüntüleme butonu
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _navigateToApplicationDetail(applicant.appID, applicant.jobTitle),
-                    icon: const Icon(Icons.visibility_outlined, size: 18),
-                    label: const Text('Detay Gör'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side: BorderSide(color: AppColors.primary),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // İletişim butonu (eğer izin varsa)
-                if (applicant.canShowContact)
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showContactOptions(applicant),
-                      icon: const Icon(Icons.contact_phone_outlined, size: 18),
-                      label: const Text('İletişim'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-                if (!applicant.canShowContact)
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: null,
-                      icon: const Icon(Icons.block_outlined, size: 18),
-                      label: const Text('İzin Yok'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.grey[400],
-                        side: BorderSide(color: Colors.grey[300]!),
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1072,11 +1176,13 @@ class _FavoriteApplicantCard extends StatelessWidget {
   final EmployerFavoriteApplicantModel applicant;
   final VoidCallback onTap;
   final VoidCallback onJobTap;
+  final VoidCallback? onRemoveFavorite;
 
   const _FavoriteApplicantCard({
     required this.applicant,
     required this.onTap,
     required this.onJobTap,
+    this.onRemoveFavorite,
   });
 
   @override
@@ -1091,6 +1197,7 @@ class _FavoriteApplicantCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(8),
           child: Container(
+            constraints: const BoxConstraints(minHeight: 80),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey[200]!),
@@ -1098,8 +1205,10 @@ class _FavoriteApplicantCard extends StatelessWidget {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     CircleAvatar(
                       radius: 24,
@@ -1133,6 +1242,7 @@ class _FavoriteApplicantCard extends StatelessWidget {
                           const SizedBox(height: 4),
                           InkWell(
                             onTap: onJobTap,
+                            borderRadius: BorderRadius.circular(4),
                             child: Text(
                               applicant.jobTitle,
                               style: GoogleFonts.inter(
@@ -1148,33 +1258,38 @@ class _FavoriteApplicantCard extends StatelessWidget {
                       ),
                     ),
                     
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.red.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.favorite,
-                            size: 12,
-                            color: Colors.red[600],
+                    // Favori çıkarma butonu
+                    InkWell(
+                      onTap: onRemoveFavorite,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.red.withValues(alpha: 0.3),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Favori',
-                            style: GoogleFonts.inter(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.favorite,
+                              size: 14,
                               color: Colors.red[600],
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              'Çıkar',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.red[600],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1190,14 +1305,15 @@ class _FavoriteApplicantCard extends StatelessWidget {
                       color: Colors.grey[500],
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      'Favori: ${applicant.formattedDate}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.grey[600],
+                    Expanded(
+                      child: Text(
+                        'Favori: ${applicant.formattedDate}',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
                       ),
                     ),
-                    const Spacer(),
                     Icon(
                       Icons.arrow_forward_ios,
                       size: 14,

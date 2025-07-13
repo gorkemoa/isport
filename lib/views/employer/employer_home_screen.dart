@@ -8,6 +8,9 @@ import '../../services/logger_service.dart';
 import '../login_screen.dart';
 import 'add_job_screen.dart';
 import 'favorite_applicants_screen.dart';
+import 'application_detail_screen.dart';
+import '../../viewmodels/employer_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 class EmployerHomeScreen extends StatefulWidget {
   const EmployerHomeScreen({super.key});
@@ -1447,132 +1450,190 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
   Widget _buildApplicationCard(EmployerApplicationModel application) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade100,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.blue.shade100,
-                child: Text(
-                  application.userInitials,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      application.userName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      application.jobTitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor(application.statusColor).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _getStatusColor(application.statusColor).withOpacity(0.3),
-                  ),
-                ),
-                child: Text(
-                  application.statusName,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: _getStatusColor(application.statusColor),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          if (application.hasDescription) ...[
-            Text(
-              application.shortDescription,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ApplicationDetailScreen(
+                appId: application.appID,
+                jobTitle: application.jobTitle,
               ),
             ),
-            const SizedBox(height: 8),
-          ],
-          
-          Row(
-            children: [
-              Icon(Icons.schedule, size: 16, color: Colors.grey.shade500),
-              const SizedBox(width: 4),
-              Text(
-                application.appliedAt,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade500,
-                ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.shade100,
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-              const Spacer(),
-              if (application.isFavorite)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.favorite, size: 12, color: Colors.red.shade600),
-                      const SizedBox(width: 2),
-                      Text(
-                        'Favori',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.red.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
             ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: Colors.blue.shade100,
+                    child: Text(
+                      application.userInitials,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          application.userName,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          application.jobTitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Favori butonu
+                  IconButton(
+                    onPressed: () => _toggleFavoriteApplicant(application.jobID, application.userID),
+                    icon: Icon(
+                      application.isFavorite ? Icons.favorite : Icons.favorite_border,
+                      color: application.isFavorite ? Colors.red[400] : Colors.grey[400],
+                      size: 20,
+                    ),
+                    tooltip: application.isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle',
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(application.statusColor).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _getStatusColor(application.statusColor).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      application.statusName,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _getStatusColor(application.statusColor),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              if (application.hasDescription) ...[
+                Text(
+                  application.shortDescription,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              
+              Row(
+                children: [
+                  Icon(Icons.schedule, size: 16, color: Colors.grey.shade500),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      application.appliedAt,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                  if (application.isFavorite)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.favorite, size: 12, color: Colors.red.shade600),
+                          const SizedBox(width: 2),
+                          Text(
+                            'Favori',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.red.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  /// Favori aday durumunu değiştirir
+  Future<void> _toggleFavoriteApplicant(int jobId, int applicantId) async {
+    try {
+      final success = await context.read<EmployerViewModel>().toggleFavoriteApplicant(
+        jobId,
+        applicantId,
+      );
+
+      if (success && mounted) {
+        // Başarılı işlem sonrası başvuruları yenile
+        await _loadApplicationsData();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Favori durumu güncellendi'),
+            backgroundColor: Colors.blue.shade600,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   /// Durum rengini döner

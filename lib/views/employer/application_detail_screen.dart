@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isport/viewmodels/employer_viewmodel.dart';
-import 'package:isport/models/employer_models.dart';
-import 'package:isport/utils/app_constants.dart';
+import 'package:provider/provider.dart';
+import '../../viewmodels/employer_viewmodel.dart';
+import '../../models/employer_models.dart';
+import '../../utils/app_constants.dart';
 
 /// Başvuru detayı ekranı
-class ApplicationDetailScreen extends ConsumerStatefulWidget {
+class ApplicationDetailScreen extends StatefulWidget {
   final int appId;
   final String jobTitle;
 
@@ -16,10 +16,10 @@ class ApplicationDetailScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<ApplicationDetailScreen> createState() => _ApplicationDetailScreenState();
+  State<ApplicationDetailScreen> createState() => _ApplicationDetailScreenState();
 }
 
-class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScreen>
+class _ApplicationDetailScreenState extends State<ApplicationDetailScreen>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -75,7 +75,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
     });
 
     try {
-      final detail = await ref.read(employerViewModelProvider.notifier).getApplicationDetail(widget.appId);
+      final detail = await context.read<EmployerViewModel>().getApplicationDetail(widget.appId);
       
       if (mounted) {
         setState(() {
@@ -101,7 +101,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
     });
 
     try {
-      final success = await ref.read(employerViewModelProvider.notifier).updateApplicationStatus(
+      final success = await context.read<EmployerViewModel>().updateApplicationStatus(
         widget.appId,
         newStatus,
       );
@@ -113,7 +113,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Başvuru durumu başarıyla güncellendi'),
-            backgroundColor: AppConstants.primaryColor,
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -169,13 +169,56 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         onPressed: () => Navigator.of(context).pop(),
       ),
       actions: [
-        if (_applicationDetail != null)
+        if (_applicationDetail != null) ...[
+          // Favori butonu
+          IconButton(
+            icon: Icon(
+              Icons.favorite,
+              color: Colors.red[400],
+            ),
+            onPressed: () => _toggleFavorite(),
+            tooltip: 'Favorilere ekle/çıkar',
+          ),
+          // Yenile butonu
           IconButton(
             icon: Icon(Icons.refresh, color: Colors.grey[700]),
             onPressed: _loadApplicationDetail,
           ),
+        ],
       ],
     );
+  }
+
+  /// Favori durumunu değiştirir
+  Future<void> _toggleFavorite() async {
+    if (_applicationDetail == null) return;
+
+    try {
+      final success = await context.read<EmployerViewModel>().toggleFavoriteApplicant(
+        _applicationDetail!.jobID,
+        _applicationDetail!.userID,
+      );
+
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Favori durumu güncellendi'),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildBody() {
@@ -206,7 +249,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
           const SizedBox(height: 16),
           Text(
@@ -246,7 +289,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
             icon: const Icon(Icons.refresh),
             label: const Text('Tekrar Dene'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppConstants.primaryColor,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -312,7 +355,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -327,7 +370,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: AppConstants.primaryColor.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: Center(
@@ -336,7 +379,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: AppConstants.primaryColor,
+                      color: AppColors.primary,
                     ),
                   ),
                 ),
@@ -381,7 +424,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -392,7 +435,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         children: [
           Row(
             children: [
-              Icon(Icons.person_outline, color: AppConstants.primaryColor),
+              Icon(Icons.person_outline, color: AppColors.primary),
               const SizedBox(width: 8),
               const Text(
                 'Aday Bilgileri',
@@ -424,7 +467,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -435,7 +478,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         children: [
           Row(
             children: [
-              Icon(Icons.work_outline, color: AppConstants.primaryColor),
+              Icon(Icons.work_outline, color: AppColors.primary),
               const SizedBox(width: 8),
               const Text(
                 'Başvuru Bilgileri',
@@ -466,7 +509,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -477,7 +520,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         children: [
           Row(
             children: [
-              Icon(Icons.description_outlined, color: AppConstants.primaryColor),
+              Icon(Icons.description_outlined, color: AppColors.primary),
               const SizedBox(width: 8),
               const Text(
                 'CV Bilgileri',
@@ -509,7 +552,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -520,7 +563,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         children: [
           Row(
             children: [
-              Icon(Icons.update_outlined, color: AppConstants.primaryColor),
+              Icon(Icons.update_outlined, color: AppColors.primary),
               const SizedBox(width: 8),
               const Text(
                 'Durum Güncelleme',
@@ -632,7 +675,6 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
         const SizedBox(height: 16),
         ...statusOptions.map((status) {
           final isCurrentStatus = status['id'] == detail.statusID;
-          final isSelected = false; // Bu değer state'den gelecek
           
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -643,7 +685,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: isCurrentStatus 
-                    ? _parseStatusColor(status['color'] as String).withOpacity(0.1)
+                    ? _parseStatusColor(status['color'] as String).withValues(alpha: 0.1)
                     : Colors.grey[50],
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
@@ -688,7 +730,7 @@ class _ApplicationDetailScreenState extends ConsumerState<ApplicationDetailScree
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppConstants.primaryColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                         ),
                       ),
                   ],

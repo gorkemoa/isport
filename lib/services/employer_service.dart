@@ -569,7 +569,7 @@ class EmployerService {
                    extra: {'url': uri.toString(), 'body': request.toJson()});
 
       // HTTP isteği gönder
-      final response = await http.post(
+      final response = await http.put(
         uri,
         headers: headers,
         body: jsonEncode(request.toJson()),
