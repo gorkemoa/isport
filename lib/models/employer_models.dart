@@ -538,17 +538,25 @@ class EmployerFavoriteApplicantModel {
   final int favID;
   final int userID;
   final int jobID;
+  final int appID;
   final String userName;
+  final String userEmail;
+  final String userPhone;
   final String jobTitle;
   final String favDate;
+  final bool canShowContact;
 
   EmployerFavoriteApplicantModel({
     required this.favID,
     required this.userID,
     required this.jobID,
+    required this.appID,
     required this.userName,
+    required this.userEmail,
+    required this.userPhone,
     required this.jobTitle,
     required this.favDate,
+    required this.canShowContact,
   });
 
   /// JSON'dan EmployerFavoriteApplicantModel oluşturur
@@ -557,9 +565,13 @@ class EmployerFavoriteApplicantModel {
       favID: json['favID'] ?? 0,
       userID: json['userID'] ?? 0,
       jobID: json['jobID'] ?? 0,
+      appID: json['appID'] ?? 0,
       userName: json['userName'] ?? '',
+      userEmail: json['userEmail'] ?? '',
+      userPhone: json['userPhone'] ?? '',
       jobTitle: json['jobTitle'] ?? '',
       favDate: json['favDate'] ?? '',
+      canShowContact: json['canShowContact'] ?? false,
     );
   }
 

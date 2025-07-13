@@ -10,6 +10,7 @@ import '../../models/employer_models.dart';
 import '../../viewmodels/employer_viewmodel.dart';
 import '../../utils/app_constants.dart';
 import '../../services/logger_service.dart';
+import 'application_detail_screen.dart'; // Added import for ApplicationDetailScreen
 
 /// Firma favori adayları listeleme ekranı
 class FavoriteApplicantsScreen extends StatefulWidget {
@@ -782,6 +783,285 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Favori aday durumunu değiştirir
+  Future<void> _toggleFavoriteApplicant(int jobId, int applicantId) async {
+    try {
+      final success = await context.read<EmployerViewModel>().toggleFavoriteApplicant(
+        jobId,
+        applicantId,
+      );
+
+      if (success && mounted) {
+        // Başarılı işlem sonrası listeyi yenile
+        await context.read<EmployerViewModel>().loadFavoriteApplicants();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Favori durumu güncellendi'),
+            backgroundColor: AppConstants.primaryColor,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hata: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Başvuru detayı ekranına yönlendirir
+  void _navigateToApplicationDetail(int appId, String jobTitle) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ApplicationDetailScreen(
+          appId: appId,
+          jobTitle: jobTitle,
+        ),
+      ),
+    );
+  }
+
+  /// Favori aday kartını oluşturur
+  Widget _buildFavoriteApplicantCard(EmployerFavoriteApplicantModel applicant) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Aday bilgileri
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Aday avatar'ı
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Center(
+                    child: Text(
+                      applicant.userInitials,
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Aday bilgileri
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        applicant.userName,
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        applicant.jobTitle,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Başvuru: ${applicant.formattedDate}',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Favori butonu
+                IconButton(
+                  onPressed: () => _toggleFavoriteApplicant(applicant.jobID, applicant.userID),
+                  icon: Icon(
+                    Icons.favorite,
+                    color: Colors.red[400],
+                    size: 24,
+                  ),
+                  tooltip: 'Favorilerden çıkar',
+                ),
+              ],
+            ),
+          ),
+          // Aksiyon butonları
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
+            child: Row(
+              children: [
+                // Detay görüntüleme butonu
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _navigateToApplicationDetail(applicant.appID, applicant.jobTitle),
+                    icon: const Icon(Icons.visibility_outlined, size: 18),
+                    label: const Text('Detay Gör'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(color: AppColors.primary),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // İletişim butonu (eğer izin varsa)
+                if (applicant.canShowContact)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showContactOptions(applicant),
+                      icon: const Icon(Icons.contact_phone_outlined, size: 18),
+                      label: const Text('İletişim'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+                if (!applicant.canShowContact)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.block_outlined, size: 18),
+                      label: const Text('İzin Yok'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.grey[400],
+                        side: BorderSide(color: Colors.grey[300]!),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// İletişim seçeneklerini gösterir
+  void _showContactOptions(EmployerFavoriteApplicantModel applicant) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'İletişim Seçenekleri',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: Icon(Icons.email_outlined, color: AppColors.primary),
+              title: Text(applicant.userEmail),
+              subtitle: const Text('E-posta'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _launchEmail(applicant.userEmail);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.phone_outlined, color: AppColors.primary),
+              title: Text(applicant.userPhone),
+              subtitle: const Text('Telefon'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _launchPhone(applicant.userPhone);
+              },
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// E-posta uygulamasını açar
+  void _launchEmail(String email) {
+    // URL launcher kullanarak e-posta uygulamasını aç
+    // Bu örnek için basit bir snackbar gösteriyoruz
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('E-posta: $email'),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Telefon uygulamasını açar
+  void _launchPhone(String phone) {
+    // URL launcher kullanarak telefon uygulamasını aç
+    // Bu örnek için basit bir snackbar gösteriyoruz
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Telefon: $phone'),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
