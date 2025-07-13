@@ -499,8 +499,8 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
-                  'Favori',
-                  company.totalFavorites.toString(),
+                  'Favori Aday',
+                  _favoriteApplicantsData?.favoriteCount.toString() ?? '0',
                   Icons.favorite,
                   Colors.red.shade600,
                 ),
@@ -556,6 +556,13 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                   Icons.people,
                   Colors.orange.shade600,
                   () => setState(() => _currentIndex = 2),
+                ),
+                const SizedBox(height: 12),
+                _buildActionButton(
+                  'Favori Adaylar',
+                  Icons.favorite,
+                  Colors.red.shade600,
+                  () => setState(() => _currentIndex = 3),
                 ),
                 const SizedBox(height: 12),
                 _buildActionButton(
