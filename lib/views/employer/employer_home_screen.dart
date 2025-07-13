@@ -317,6 +317,7 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
                     _buildHomePage(),
                     _buildJobsPage(),
                     _buildApplicationsPage(),
+                    _buildFavoriteApplicantsPage(),
                     _buildProfilePage(),
                   ],
                 ),
