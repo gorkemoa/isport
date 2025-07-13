@@ -224,6 +224,45 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
     }
   }
 
+  /// Favori adayları yükler
+  Future<void> _loadFavoriteApplicantsData() async {
+    if (_isFavoriteApplicantsLoading) return;
+
+    setState(() {
+      _isFavoriteApplicantsLoading = true;
+      _favoriteApplicantsErrorMessage = null;
+    });
+
+    try {
+      final response = await _employerService.fetchCurrentUserCompanyFavoriteApplicants();
+      
+      if (response.isTokenError) {
+        await _logout();
+        return;
+      }
+
+      if (response.isSuccessful && response.data != null) {
+        setState(() {
+          _favoriteApplicantsData = response.data;
+          _isFavoriteApplicantsLoading = false;
+        });
+        logger.debug('Favori adaylar başarıyla yüklendi: ${response.data!.favoriteCount} aday');
+      } else {
+        setState(() {
+          _favoriteApplicantsErrorMessage = response.displayMessage ?? 'Favori adaylar alınamadı';
+          _isFavoriteApplicantsLoading = false;
+        });
+        logger.debug('Favori adaylar alınamadı: ${response.errorMessage}');
+      }
+    } catch (e) {
+      setState(() {
+        _favoriteApplicantsErrorMessage = 'Bir hata oluştu: $e';
+        _isFavoriteApplicantsLoading = false;
+      });
+      logger.debug('Favori adaylar yüklenirken hata: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
