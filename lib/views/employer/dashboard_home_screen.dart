@@ -274,8 +274,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
           _buildStatsGrid(company),
           const SizedBox(height: 24),
           _buildQuickActions(company),
-          const SizedBox(height: 24),
-          _buildRecentActivity(),
         ],
       ),
     );
@@ -615,115 +613,6 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
     );
   }
 
-  Widget _buildRecentActivity() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Son Aktiviteler',
-          style: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textTitle,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              _buildActivityItem(
-                'Yeni başvuru alındı',
-                'PHP Developer pozisyonu için 2 yeni başvuru',
-                Icons.person_add,
-                Colors.green[600]!,
-                '2 saat önce',
-              ),
-              const SizedBox(height: 16),
-              _buildActivityItem(
-                'İlan güncellendi',
-                'Senior Flutter Developer ilanı güncellendi',
-                Icons.edit,
-                Colors.blue[600]!,
-                '1 gün önce',
-              ),
-              const SizedBox(height: 16),
-              _buildActivityItem(
-                'Favori aday eklendi',
-                'Ahmet Yılmaz favorilere eklendi',
-                Icons.favorite,
-                Colors.red[600]!,
-                '2 gün önce',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActivityItem(String title, String description, IconData icon, Color color, String time) {
-    return Row(
-      children: [
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: color,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textTitle,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  color: AppColors.textLight,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Text(
-          time,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: AppColors.textLight,
-          ),
-        ),
-      ],
-    );
-  }
 
   void _refreshData() {
     _loadUserData();
