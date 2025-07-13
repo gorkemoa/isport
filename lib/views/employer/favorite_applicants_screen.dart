@@ -802,7 +802,7 @@ class _FavoriteApplicantsScreenState extends State<FavoriteApplicantsScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Favori durumu güncellendi'),
-            backgroundColor: AppConstants.primaryColor,
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
           ),
         );
