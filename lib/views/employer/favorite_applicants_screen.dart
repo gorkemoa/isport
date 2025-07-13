@@ -10,7 +10,7 @@ import '../../models/employer_models.dart';
 import '../../viewmodels/employer_viewmodel.dart';
 import '../../utils/app_constants.dart';
 import '../../services/logger_service.dart';
-import 'application_detail_screen.dart'; // Added import for ApplicationDetailScreen
+import 'application_detail_screen.dart';
 
 /// Firma favori adayları listeleme ekranı
 class FavoriteApplicantsScreen extends StatefulWidget {
