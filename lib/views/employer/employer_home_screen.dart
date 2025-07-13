@@ -371,6 +371,8 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
       case 2:
         return 'Başvurular';
       case 3:
+        return 'Favori Adaylar';
+      case 4:
         return 'Profil';
       default:
         return 'İşveren Paneli';
@@ -1421,6 +1423,17 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
       default:
         return const Color(0xFF6B7280); // Gray
     }
+  }
+
+  /// Favori adaylar sayfasını oluşturur
+  Widget _buildFavoriteApplicantsPage() {
+    return Navigator(
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => const FavoriteApplicantsScreen(),
+        );
+      },
+    );
   }
 
   /// Başvuru kartı oluşturur
