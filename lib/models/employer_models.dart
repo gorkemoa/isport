@@ -703,3 +703,341 @@ class EmployerFavoriteApplicantsResponse {
     };
   }
 } 
+
+/// Favori aday ekleme/çıkarma isteği modeli
+class FavoriteApplicantRequest {
+  final String userToken;
+  final int jobID;
+  final int applicantID;
+
+  FavoriteApplicantRequest({
+    required this.userToken,
+    required this.jobID,
+    required this.applicantID,
+  });
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'userToken': userToken,
+      'jobID': jobID,
+      'applicantID': applicantID,
+    };
+  }
+}
+
+/// Favori aday ekleme/çıkarma yanıtı data modeli
+class FavoriteApplicantData {
+  final String message;
+
+  FavoriteApplicantData({
+    required this.message,
+  });
+
+  /// JSON'dan FavoriteApplicantData oluşturur
+  factory FavoriteApplicantData.fromJson(Map<String, dynamic> json) {
+    return FavoriteApplicantData(
+      message: json['message'] ?? '',
+    );
+  }
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'message': message,
+    };
+  }
+}
+
+/// Favori aday ekleme/çıkarma API yanıtını temsil eden model
+class FavoriteApplicantResponse {
+  final bool error;
+  final bool success;
+  final FavoriteApplicantData? data;
+  final String? status410;
+  final String? status417;
+  final String errorMessage;
+  final bool isTokenError;
+
+  FavoriteApplicantResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+    this.status417,
+    required this.errorMessage,
+    this.isTokenError = false,
+  });
+
+  /// JSON'dan FavoriteApplicantResponse oluşturur
+  factory FavoriteApplicantResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
+    return FavoriteApplicantResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      data: json['data'] != null ? FavoriteApplicantData.fromJson(json['data']) : null,
+      status410: json['410'],
+      status417: json['417'],
+      errorMessage: json['error_message'] ?? json['417'] ?? '',
+      isTokenError: isTokenError,
+    );
+  }
+
+  /// İstek başarılı mı kontrol eder (410 status başarılı demektir)
+  bool get isSuccessful => status410 != null || (!error && success);
+
+  /// Hata mesajını alır
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (status417 != null) return status417;
+    return errorMessage.isNotEmpty ? errorMessage : null;
+  }
+
+  /// Başarı mesajını alır
+  String get displaySuccessMessage {
+    if (data != null && data!.message.isNotEmpty) return data!.message;
+    return 'İşlem başarıyla tamamlandı.';
+  }
+
+  /// FavoriteApplicantResponse'u JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
+}
+
+/// CV verilerini temsil eden model
+class CvData {
+  final int cvID;
+  final String cvTitle;
+  final String cvSummary;
+
+  CvData({
+    required this.cvID,
+    required this.cvTitle,
+    required this.cvSummary,
+  });
+
+  /// JSON'dan CvData oluşturur
+  factory CvData.fromJson(Map<String, dynamic> json) {
+    return CvData(
+      cvID: json['cvID'] ?? 0,
+      cvTitle: json['cvTitle'] ?? '',
+      cvSummary: json['cvSummary'] ?? '',
+    );
+  }
+
+  /// CvData'yı JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'cvID': cvID,
+      'cvTitle': cvTitle,
+      'cvSummary': cvSummary,
+    };
+  }
+
+  /// CV başlığı var mı kontrol eder
+  bool get hasTitle => cvTitle.isNotEmpty;
+
+  /// CV özeti var mı kontrol eder
+  bool get hasSummary => cvSummary.isNotEmpty;
+}
+
+/// Başvuru detayı verilerini temsil eden model
+class ApplicationDetailModel {
+  final int appID;
+  final int jobID;
+  final int cvID;
+  final int userID;
+  final String jobTitle;
+  final String userName;
+  final String userEmail;
+  final String userPhone;
+  final int statusID;
+  final String statusName;
+  final String statusColor;
+  final String appliedAt;
+  final bool isShowContact;
+  final CvData cvData;
+
+  ApplicationDetailModel({
+    required this.appID,
+    required this.jobID,
+    required this.cvID,
+    required this.userID,
+    required this.jobTitle,
+    required this.userName,
+    required this.userEmail,
+    required this.userPhone,
+    required this.statusID,
+    required this.statusName,
+    required this.statusColor,
+    required this.appliedAt,
+    required this.isShowContact,
+    required this.cvData,
+  });
+
+  /// JSON'dan ApplicationDetailModel oluşturur
+  factory ApplicationDetailModel.fromJson(Map<String, dynamic> json) {
+    return ApplicationDetailModel(
+      appID: json['appID'] ?? 0,
+      jobID: json['jobID'] ?? 0,
+      cvID: json['cvID'] ?? 0,
+      userID: json['userID'] ?? 0,
+      jobTitle: json['jobTitle'] ?? '',
+      userName: json['userName'] ?? '',
+      userEmail: json['userEmail'] ?? '',
+      userPhone: json['userPhone'] ?? '',
+      statusID: json['statusID'] ?? 0,
+      statusName: json['statusName'] ?? '',
+      statusColor: json['statusColor'] ?? '#999999',
+      appliedAt: json['appliedAt'] ?? '',
+      isShowContact: json['isShowContact'] ?? false,
+      cvData: json['cvData'] != null ? CvData.fromJson(json['cvData']) : CvData(cvID: 0, cvTitle: '', cvSummary: ''),
+    );
+  }
+
+  /// ApplicationDetailModel'i JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'appID': appID,
+      'jobID': jobID,
+      'cvID': cvID,
+      'userID': userID,
+      'jobTitle': jobTitle,
+      'userName': userName,
+      'userEmail': userEmail,
+      'userPhone': userPhone,
+      'statusID': statusID,
+      'statusName': statusName,
+      'statusColor': statusColor,
+      'appliedAt': appliedAt,
+      'isShowContact': isShowContact,
+      'cvData': cvData.toJson(),
+    };
+  }
+
+  /// Kullanıcı baş harflerini döner
+  String get userInitials {
+    if (userName.isEmpty) return '?';
+    final names = userName.split(' ');
+    if (names.length >= 2) {
+      return '${names[0][0]}${names[1][0]}'.toUpperCase();
+    }
+    return userName[0].toUpperCase();
+  }
+
+  /// Başvuru tarihini formatlar
+  String get formattedAppliedAt {
+    try {
+      final date = DateTime.parse(appliedAt);
+      return '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+    } catch (e) {
+      return appliedAt;
+    }
+  }
+
+  /// Başvuru saatini formatlar
+  String get formattedAppliedTime {
+    try {
+      final date = DateTime.parse(appliedAt);
+      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /// İletişim bilgileri görünür mü kontrol eder
+  bool get canShowContact => isShowContact;
+
+  /// CV var mı kontrol eder
+  bool get hasCv => cvID > 0;
+}
+
+/// Başvuru detayı güncelleme isteği modeli
+class ApplicationDetailUpdateRequest {
+  final String userToken;
+  final int appID;
+  final int? newStatus;
+
+  ApplicationDetailUpdateRequest({
+    required this.userToken,
+    required this.appID,
+    this.newStatus,
+  });
+
+  /// JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      'userToken': userToken,
+      'appID': appID,
+    };
+    
+    if (newStatus != null) {
+      data['newStatus'] = newStatus;
+    }
+    
+    return data;
+  }
+}
+
+/// Başvuru detayı güncelleme API yanıtını temsil eden model
+class ApplicationDetailUpdateResponse {
+  final bool error;
+  final bool success;
+  final ApplicationDetailModel? data;
+  final String? status410;
+  final String? status417;
+  final String errorMessage;
+  final bool isTokenError;
+
+  ApplicationDetailUpdateResponse({
+    required this.error,
+    required this.success,
+    this.data,
+    this.status410,
+    this.status417,
+    required this.errorMessage,
+    this.isTokenError = false,
+  });
+
+  /// JSON'dan ApplicationDetailUpdateResponse oluşturur
+  factory ApplicationDetailUpdateResponse.fromJson(Map<String, dynamic> json, {bool isTokenError = false}) {
+    return ApplicationDetailUpdateResponse(
+      error: json['error'] ?? true,
+      success: json['success'] ?? false,
+      data: json['data'] != null ? ApplicationDetailModel.fromJson(json['data']) : null,
+      status410: json['410'],
+      status417: json['417'],
+      errorMessage: json['error_message'] ?? json['417'] ?? '',
+      isTokenError: isTokenError,
+    );
+  }
+
+  /// İstek başarılı mı kontrol eder (410 status başarılı demektir)
+  bool get isSuccessful => status410 != null || (!error && success);
+
+  /// Hata mesajını alır
+  String? get displayMessage {
+    if (isTokenError) return 'Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.';
+    if (status417 != null) return status417;
+    return errorMessage.isNotEmpty ? errorMessage : null;
+  }
+
+  /// ApplicationDetailUpdateResponse'u JSON'a çevirir
+  Map<String, dynamic> toJson() {
+    return {
+      'error': error,
+      'success': success,
+      'data': data?.toJson(),
+      '410': status410,
+      '417': status417,
+      'error_message': errorMessage,
+    };
+  }
+} 

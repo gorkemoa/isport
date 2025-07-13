@@ -441,6 +441,179 @@ class EmployerService {
     return await fetchCompanyFavoriteApplicants(companyId, useCache: false);
   }
 
+  /// Favori aday ekler veya çıkarır
+  /// [jobId] - İş ID'si
+  /// [applicantId] - Aday ID'si
+  /// Returns FavoriteApplicantResponse with status code handling (410 = success, 417 = error)
+  Future<FavoriteApplicantResponse> toggleFavoriteApplicant(int jobId, int applicantId) async {
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      logger.info('Favori aday durumu değiştiriliyor', 
+                  extra: {'jobId': jobId, 'applicantId': applicantId});
+      
+      // Kullanıcı token'ını al
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('userToken') ?? '';
+      
+      if (userToken.isEmpty) {
+        logger.warning('User token bulunamadı');
+        return FavoriteApplicantResponse(
+          error: true,
+          success: false,
+          errorMessage: 'Oturum açmanız gerekiyor',
+          isTokenError: true,
+        );
+      }
+
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl/service/user/company/favoriteApplicant');
+      final headers = AuthService.getHeaders(userToken: userToken);
+      
+      final request = FavoriteApplicantRequest(
+        userToken: userToken,
+        jobID: jobId,
+        applicantID: applicantId,
+      );
+
+      logger.debug('Favori aday API isteği gönderiliyor', 
+                   extra: {'url': uri.toString(), 'body': request.toJson()});
+
+      // HTTP isteği gönder
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(_connectTimeout);
+
+      stopwatch.stop();
+
+      // Network request'i logla
+      logger.logNetworkRequest(
+        method: 'POST',
+        url: uri.toString(),
+        statusCode: response.statusCode,
+        duration: stopwatch.elapsed,
+      );
+
+      logger.debug('Favori aday API yanıtı alındı', 
+                   extra: {'statusCode': response.statusCode});
+
+      // Yanıtı parse et
+      final favoriteResponse = _parseFavoriteApplicantResponse(response);
+      
+      // Başarılı sonuç ise cache'i temizle
+      if (favoriteResponse.isSuccessful) {
+        // Favori adaylar cache'ini temizle ki yeniden çekilsin
+        _clearFavoriteApplicantsCache();
+        logger.debug('Favori aday durumu değiştirildi - cache temizlendi', 
+                    extra: {'jobId': jobId, 'applicantId': applicantId});
+      }
+
+      return favoriteResponse;
+
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      logger.error('Favori aday durumu değiştirme hatası', 
+                   error: e, stackTrace: stackTrace, 
+                   extra: {'jobId': jobId, 'applicantId': applicantId, 'duration': stopwatch.elapsed.inMilliseconds});
+      return FavoriteApplicantResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
+  /// Başvuru detayını getirir ve günceller
+  /// [companyId] - Firma ID'si
+  /// [appId] - Başvuru ID'si
+  /// [newStatus] - Yeni durum ID'si (opsiyonel)
+  /// Returns ApplicationDetailUpdateResponse with status code handling (410 = success, 417 = error)
+  Future<ApplicationDetailUpdateResponse> getApplicationDetailUpdate(
+    int companyId, 
+    int appId, {
+    int? newStatus,
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    
+    try {
+      logger.info('Başvuru detayı getiriliyor/güncelleniyor', 
+                  extra: {'companyId': companyId, 'appId': appId, 'newStatus': newStatus});
+      
+      // Kullanıcı token'ını al
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('userToken') ?? '';
+      
+      if (userToken.isEmpty) {
+        logger.warning('User token bulunamadı');
+        return ApplicationDetailUpdateResponse(
+          error: true,
+          success: false,
+          errorMessage: 'Oturum açmanız gerekiyor',
+          isTokenError: true,
+        );
+      }
+
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl$_companyApplicationsEndpoint/$companyId/applicationDetailUpdate');
+      final headers = AuthService.getHeaders(userToken: userToken);
+      
+      final request = ApplicationDetailUpdateRequest(
+        userToken: userToken,
+        appID: appId,
+        newStatus: newStatus,
+      );
+
+      logger.debug('Başvuru detayı API isteği gönderiliyor', 
+                   extra: {'url': uri.toString(), 'body': request.toJson()});
+
+      // HTTP isteği gönder
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(_connectTimeout);
+
+      stopwatch.stop();
+
+      // Network request'i logla
+      logger.logNetworkRequest(
+        method: 'POST',
+        url: uri.toString(),
+        statusCode: response.statusCode,
+        duration: stopwatch.elapsed,
+      );
+
+      logger.debug('Başvuru detayı API yanıtı alındı', 
+                   extra: {'statusCode': response.statusCode});
+
+      // Yanıtı parse et
+      final detailResponse = _parseApplicationDetailUpdateResponse(response);
+      
+      // Başarılı sonuç ise cache'i temizle
+      if (detailResponse.isSuccessful) {
+        // Başvurular cache'ini temizle ki yeniden çekilsin
+        _clearApplicationsCache();
+        logger.debug('Başvuru detayı güncellendi - cache temizlendi', 
+                    extra: {'companyId': companyId, 'appId': appId});
+      }
+
+      return detailResponse;
+
+    } catch (e, stackTrace) {
+      stopwatch.stop();
+      logger.error('Başvuru detayı getirme/güncelleme hatası', 
+                   error: e, stackTrace: stackTrace, 
+                   extra: {'companyId': companyId, 'appId': appId, 'duration': stopwatch.elapsed.inMilliseconds});
+      return ApplicationDetailUpdateResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
   /// Cache'in geçerli olup olmadığını kontrol eder (iş ilanları)
   bool _isJobsCacheValid(int companyId) {
     if (!_jobsCache.containsKey(companyId) || !_jobsCacheTimestamps.containsKey(companyId)) {
@@ -718,6 +891,94 @@ class EmployerService {
         errorMessage: 'Veri işleme hatası',
       );
     }
+  }
+
+  /// HTTP yanıtını FavoriteApplicantResponse'a çevirir
+  FavoriteApplicantResponse _parseFavoriteApplicantResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return FavoriteApplicantResponse(
+          error: true,
+          success: false,
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
+      }
+      
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return FavoriteApplicantResponse.fromJson(jsonResponse);
+      } else {
+        // Normal error handling
+        return FavoriteApplicantResponse.fromJson(jsonResponse);
+      }
+
+    } catch (e, stackTrace) {
+      logger.error('JSON parse hatası', error: e, stackTrace: stackTrace);
+      return FavoriteApplicantResponse(
+        error: true,
+        success: false,
+        errorMessage: 'Veri işleme hatası',
+      );
+    }
+  }
+
+  /// HTTP yanıtını ApplicationDetailUpdateResponse'a çevirir
+  ApplicationDetailUpdateResponse _parseApplicationDetailUpdateResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return ApplicationDetailUpdateResponse(
+          error: true,
+          success: false,
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
+      }
+      
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return ApplicationDetailUpdateResponse.fromJson(jsonResponse);
+      } else {
+        // Normal error handling
+        return ApplicationDetailUpdateResponse.fromJson(jsonResponse);
+      }
+
+    } catch (e, stackTrace) {
+      logger.error('JSON parse hatası', error: e, stackTrace: stackTrace);
+      return ApplicationDetailUpdateResponse(
+        error: true,
+        success: false,
+        errorMessage: 'Veri işleme hatası',
+      );
+    }
+  }
+
+  /// Başvurular cache'ini temizler
+  void _clearApplicationsCache() {
+    _applicationsCache.clear();
+    _applicationsCacheTimestamps.clear();
+    logger.debug('Başvurular cache temizlendi');
+  }
+
+  /// Favori adaylar cache'ini temizler
+  void _clearFavoriteApplicantsCache() {
+    _favoriteApplicantsCache.clear();
+    _favoriteApplicantsCacheTimestamps.clear();
+    logger.debug('Favori adaylar cache temizlendi');
   }
 
   /// Exception'ı kullanıcı dostu hata mesajına çevirir

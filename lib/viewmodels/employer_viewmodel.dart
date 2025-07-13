@@ -3,6 +3,10 @@ import 'package:flutter/foundation.dart';
 import '../models/employer_models.dart';
 import '../services/employer_service.dart';
 import '../services/logger_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/user_model.dart';
+import '../models/employer_models.dart';
+import 'dart:convert';
 
 /// İşveren state management'ı
 class EmployerViewModel extends ChangeNotifier {
@@ -331,6 +335,173 @@ class EmployerViewModel extends ChangeNotifier {
       _setFavoriteApplicantsError('Favori adaylar yenilenirken hata oluştu');
     } finally {
       _setRefreshing(false);
+    }
+  }
+
+  /// Favori aday ekler veya çıkarır
+  Future<bool> toggleFavoriteApplicant(int jobId, int applicantId) async {
+    try {
+      logger.debug('Favori aday durumu değiştiriliyor', 
+                   extra: {'jobId': jobId, 'applicantId': applicantId});
+      
+      final response = await _employerService.toggleFavoriteApplicant(jobId, applicantId);
+
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        return false;
+      }
+
+      if (response.isSuccessful) {
+        logger.debug('Favori aday durumu başarıyla değiştirildi', 
+                     extra: {'jobId': jobId, 'applicantId': applicantId});
+        return true;
+      } else {
+        final errorMsg = response.displayMessage ?? 'Favori aday durumu değiştirilemedi';
+        _setError(errorMsg);
+        return false;
+      }
+
+    } catch (e) {
+      logger.error('Favori aday durumu değiştirme hatası: $e');
+      _setError('Favori aday durumu değiştirilirken hata oluştu');
+      return false;
+    }
+  }
+
+  /// Başvuru detayını getirir ve günceller
+  Future<ApplicationDetailModel?> getApplicationDetailUpdate(
+    int companyId, 
+    int appId, {
+    int? newStatus,
+  }) async {
+    try {
+      logger.debug('Başvuru detayı getiriliyor/güncelleniyor', 
+                   extra: {'companyId': companyId, 'appId': appId, 'newStatus': newStatus});
+      
+      final response = await _employerService.getApplicationDetailUpdate(
+        companyId, 
+        appId, 
+        newStatus: newStatus,
+      );
+
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        return null;
+      }
+
+      if (response.isSuccessful && response.data != null) {
+        logger.debug('Başvuru detayı başarıyla getirildi/güncellendi', 
+                     extra: {'companyId': companyId, 'appId': appId});
+        return response.data;
+      } else {
+        final errorMsg = response.displayMessage ?? 'Başvuru detayı alınamadı';
+        _setError(errorMsg);
+        return null;
+      }
+
+    } catch (e) {
+      logger.error('Başvuru detayı getirme/güncelleme hatası: $e');
+      _setError('Başvuru detayı alınırken hata oluştu');
+      return null;
+    }
+  }
+
+  /// Başvuru durumunu günceller
+  Future<bool> updateApplicationStatus(int appId, int newStatus) async {
+    try {
+      logger.debug('Başvuru durumu güncelleniyor', 
+                   extra: {'appId': appId, 'newStatus': newStatus});
+      
+      // Mevcut kullanıcının şirket ID'sini al
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+      
+      if (userDataString == null) {
+        _setError('Kullanıcı bilgileri bulunamadı');
+        return false;
+      }
+
+      final userData = jsonDecode(userDataString);
+      final user = UserModel.fromJson(userData);
+      
+      if (!user.isComp) {
+        _setError('Sadece şirket hesapları başvuru durumu güncelleyebilir');
+        return false;
+      }
+
+      final response = await _employerService.getApplicationDetailUpdate(
+        user.userID, 
+        appId, 
+        newStatus: newStatus,
+      );
+
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        return false;
+      }
+
+      if (response.isSuccessful) {
+        logger.debug('Başvuru durumu başarıyla güncellendi', 
+                     extra: {'appId': appId, 'newStatus': newStatus});
+        return true;
+      } else {
+        final errorMsg = response.displayMessage ?? 'Başvuru durumu güncellenemedi';
+        _setError(errorMsg);
+        return false;
+      }
+
+    } catch (e) {
+      logger.error('Başvuru durumu güncelleme hatası: $e');
+      _setError('Başvuru durumu güncellenirken hata oluştu');
+      return false;
+    }
+  }
+
+  /// Başvuru detayını getirir (sadece görüntüleme)
+  Future<ApplicationDetailModel?> getApplicationDetail(int appId) async {
+    try {
+      logger.debug('Başvuru detayı getiriliyor', extra: {'appId': appId});
+      
+      // Mevcut kullanıcının şirket ID'sini al
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+      
+      if (userDataString == null) {
+        _setError('Kullanıcı bilgileri bulunamadı');
+        return null;
+      }
+
+      final userData = jsonDecode(userDataString);
+      final user = UserModel.fromJson(userData);
+      
+      if (!user.isComp) {
+        _setError('Sadece şirket hesapları başvuru detayı görüntüleyebilir');
+        return null;
+      }
+
+      final response = await _employerService.getApplicationDetailUpdate(
+        user.userID, 
+        appId,
+      );
+
+      if (response.isTokenError) {
+        _setError('Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.');
+        return null;
+      }
+
+      if (response.isSuccessful && response.data != null) {
+        logger.debug('Başvuru detayı başarıyla getirildi', extra: {'appId': appId});
+        return response.data;
+      } else {
+        final errorMsg = response.displayMessage ?? 'Başvuru detayı alınamadı';
+        _setError(errorMsg);
+        return null;
+      }
+
+    } catch (e) {
+      logger.error('Başvuru detayı getirme hatası: $e');
+      _setError('Başvuru detayı alınırken hata oluştu');
+      return null;
     }
   }
 
