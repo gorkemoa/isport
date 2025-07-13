@@ -350,6 +350,10 @@ class _EmployerHomeScreenState extends State<EmployerHomeScreen> {
             label: 'Başvurular',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favoriler',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profil',
           ),
