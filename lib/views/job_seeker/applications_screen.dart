@@ -101,7 +101,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
 
   Widget _buildAppBar(ApplicationViewModel appVM, FavoritesViewModel favVM) {
     return SliverAppBar(
-      expandedHeight: 140,
+      expandedHeight: 120,
       floating: false,
       pinned: true,
       elevation: 0,
@@ -138,7 +138,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                             Text(
                               'Başvurularım & Favorilerim',
                               style: GoogleFonts.inter(
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
@@ -147,7 +147,7 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                             Text(
                               '${appVM.applicationCount} başvuru • ${favVM.favoriteCount} favori',
                               style: GoogleFonts.inter(
-                                fontSize: 12,
+                                fontSize: 11,
                                 color: Colors.white.withOpacity(0.9),
                               ),
                             ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideX(),
@@ -155,15 +155,15 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Icon(
                           _mainTabController.index == 0 ? Icons.work_outline : Icons.favorite_outline,
                           color: Colors.white,
-                          size: 20,
+                          size: 16,
                         ),
                       ).animate().fadeIn(delay: 300.ms, duration: 500.ms).scale(),
                     ],
@@ -180,45 +180,91 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
   Widget _buildMainTabBar() {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: TabBar(
-          controller: _mainTabController,
-          indicator: BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-        indicatorPadding: const EdgeInsets.only(bottom: 0, top: 0, left: -55, right: -55),
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey[600],
-          labelStyle: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-          unselectedLabelStyle: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-          tabs: const [
-            Tab(
-              icon: Icon(Icons.work_outline, size: 20),
-              text: 'Başvurular',
-            ),
-            Tab(
-              icon: Icon(Icons.favorite_outline, size: 20),
-              text: 'Favoriler',
-            ),
-          ],
+        margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            return Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      _mainTabController.animateTo(0);
+                      setState(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: _mainTabController.index == 0 ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _mainTabController.index == 0 ? AppColors.primary : Colors.grey.shade300,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.work_outline,
+                            size: 16,
+                            color: _mainTabController.index == 0 ? Colors.white : Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Başvurular',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _mainTabController.index == 0 ? Colors.white : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      _mainTabController.animateTo(1);
+                      setState(() {});
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: _mainTabController.index == 1 ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: _mainTabController.index == 1 ? AppColors.primary : Colors.grey.shade300,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.favorite_outline,
+                            size: 16,
+                            color: _mainTabController.index == 1 ? Colors.white : Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Favoriler',
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _mainTabController.index == 1 ? Colors.white : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideY(begin: -0.05, end: 0),
     );
@@ -227,38 +273,32 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
   Widget _buildSearchBar() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         child: Row(
           children: [
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: TextField(
                   controller: _searchController,
                   style: GoogleFonts.inter(
-                    fontSize: 14,
+                    fontSize: 13,
                     color: const Color(0xFF374151),
                   ),
                   decoration: InputDecoration(
                     hintText: _mainTabController.index == 0 ? 'Başvuru ara...' : 'Favori ara...',
                     hintStyle: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: 13,
                       color: Colors.grey[500],
                     ),
                     prefixIcon: Icon(
                       Icons.search,
                       color: Colors.grey[500],
-                      size: 20,
+                      size: 18,
                     ),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
@@ -269,34 +309,28 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
                             icon: Icon(
                               Icons.clear,
                               color: Colors.grey[500],
-                              size: 18,
+                              size: 16,
                             ),
                           )
                         : null,
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.only(top: 13, bottom: 0, left: 12, right: 12), 
+  
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.2),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(6),
               ),
               child: IconButton(
                 onPressed: () => _showFilterBottomSheet(),
-                iconSize: 16,
+                iconSize: 14,
                 icon: const Icon(
                   Icons.tune,
                   color: Colors.white,
@@ -311,14 +345,14 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
 
   Widget _buildApplicationsContent(ApplicationViewModel appVM) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Column(
         children: [
           if (appVM.hasApplications) ...[
             _buildApplicationsTabBar(appVM),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
           ],
-          Expanded(
+          Flexible(
             child: _buildApplicationsTabView(appVM),
           ),
         ],
@@ -329,24 +363,25 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
   Widget _buildApplicationsTabBar(ApplicationViewModel appVM) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: TabBar(
         controller: _applicationsTabController,
         indicator: BoxDecoration(
           color: AppColors.primary,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(4),
         ),
-        indicatorPadding: const EdgeInsets.only(bottom: 0, top: 0, left: -25, right: -25),
+        indicatorPadding: const EdgeInsets.only(bottom: 0, top: 0, left: -15, right: -15),
         labelColor: Colors.white,
         unselectedLabelColor: Colors.grey[600],
         labelStyle: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
         unselectedLabelStyle: GoogleFonts.inter(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w500,
         ),
         tabs: [
@@ -393,8 +428,10 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
 
   Widget _buildFavoritesContent(FavoritesViewModel favVM) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: _buildFavoritesView(favVM),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Flexible(
+        child: _buildFavoritesView(favVM),
+      ),
     );
   }
 
@@ -449,24 +486,26 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
 
   Widget _buildApplicationsList(List<ApplicationModel> applications) {
     if (applications.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.work_off_outlined,
-              size: 48,
-              color: Colors.grey,
-            ),
-            SizedBox(height: 12),
-            Text(
-              'Bu kategoride başvuru bulunamadı',
-              style: TextStyle(
-                fontSize: 14,
+      return const SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.work_off_outlined,
+                size: 48,
                 color: Colors.grey,
               ),
-            ),
-          ],
+              SizedBox(height: 12),
+              Text(
+                'Bu kategoride başvuru bulunamadı',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -498,8 +537,10 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
   }
 
   Widget _buildLoadingState() {
-    return Column(
-      children: List.generate(5, (index) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      itemCount: 5,
+      itemBuilder: (context, index) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           child: Shimmer.fromColors(
@@ -514,213 +555,221 @@ class _ApplicationsScreenState extends State<ApplicationsScreen>
             ),
           ),
         );
-      }),
+      },
     );
   }
 
   Widget _buildErrorState(String message, VoidCallback onRetry) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Colors.red[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Hata Oluştu',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF374151),
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Colors.red[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            Text(
+              'Hata Oluştu',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
               ),
             ),
-            child: Text(
-              'Tekrar Dene',
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Tekrar Dene',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyApplicationsState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.work_off_outlined,
-            size: 48,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz Başvuru Yok',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF374151),
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.work_off_outlined,
+              size: 48,
+              color: Colors.grey[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'İş ilanlarına başvurduğunuzda burada görüntülenecek',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              final tabController = DefaultTabController.of(context);
-              tabController?.animateTo(1);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            Text(
+              'Henüz Başvuru Yok',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
               ),
             ),
-            child: Text(
-              'İş Ara',
+            const SizedBox(height: 8),
+            Text(
+              'İş ilanlarına başvurduğunuzda burada görüntülenecek',
+              textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                final tabController = DefaultTabController.of(context);
+                tabController?.animateTo(1);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'İş Ara',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyFavoritesState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.favorite_border,
-            size: 48,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz Favori Yok',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF374151),
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.favorite_border,
+              size: 48,
+              color: Colors.grey[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Beğendiğiniz iş ilanlarını favorilere ekleyerek burada görüntüleyebilirsiniz',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              final tabController = DefaultTabController.of(context);
-              tabController?.animateTo(1);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            Text(
+              'Henüz Favori Yok',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
               ),
             ),
-            child: Text(
-              'İş Ara',
+            const SizedBox(height: 8),
+            Text(
+              'Beğendiğiniz iş ilanlarını favorilere ekleyerek burada görüntüleyebilirsiniz',
+              textAlign: TextAlign.center,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                color: Colors.grey[600],
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                final tabController = DefaultTabController.of(context);
+                tabController?.animateTo(1);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'İş Ara',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptySearchState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.search_off,
-            size: 48,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Arama Sonucu Bulunamadı',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF374151),
+    return SingleChildScrollView(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 48,
+              color: Colors.grey[400],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '"$_searchQuery" için sonuç bulunamadı',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextButton(
-            onPressed: () {
-              _searchController.clear();
-              FocusScope.of(context).unfocus();
-            },
-            child: Text(
-              'Aramayı Temizle',
+            const SizedBox(height: 16),
+            Text(
+              'Arama Sonucu Bulunamadı',
               style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppColors.primary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              '"$_searchQuery" için sonuç bulunamadı',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                _searchController.clear();
+                FocusScope.of(context).unfocus();
+              },
+              child: Text(
+                'Aramayı Temizle',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -810,19 +859,19 @@ class _ApplicationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         elevation: 0,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey[200]!),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -856,11 +905,11 @@ class _ApplicationCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     _buildStatusChip(application.statusName, application.statusColor),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
@@ -901,10 +950,10 @@ class _ApplicationCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
         color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         status,
@@ -935,19 +984,19 @@ class _FavoriteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         elevation: 0,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               border: Border.all(color: Colors.grey[200]!),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -956,17 +1005,17 @@ class _FavoriteCard extends StatelessWidget {
                   children: [
                     // Company avatar
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Center(
                         child: Text(
                           favorite.companyInitials,
                           style: GoogleFonts.inter(
-                            fontSize: 14,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
                           ),
@@ -974,7 +1023,7 @@ class _FavoriteCard extends StatelessWidget {
                       ),
                     ),
                     
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     
                     Expanded(
                       child: Column(
@@ -1019,7 +1068,7 @@ class _FavoriteCard extends StatelessWidget {
                   ],
                 ),
                 
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 
                 Text(
                   favorite.shortDescription,
@@ -1031,15 +1080,15 @@ class _FavoriteCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: favorite.workTypeColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         favorite.workType,

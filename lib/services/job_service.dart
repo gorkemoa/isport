@@ -154,23 +154,178 @@ class JobService {
     }
   }
 
-  /// Tüm iş ilanlarını getirir (genel listing)
-  Future<List<JobListingResponse>> fetchAllJobs({int? limit, int? offset}) async {
+  /// Tüm iş ilanlarını getirir (yeni API endpoint)
+  Future<JobListResponse> fetchAllJobListings({
+    int? catID,
+    List<int>? workTypes,
+    int? cityID,
+    int? districtID,
+    String? publishDate,
+    String? sort,
+    String? latitude,
+    String? longitude,
+    int page = 1,
+  }) async {
     try {
-      logger.debug('Tüm iş ilanları getiriliyor');
+      logger.debug('Tüm iş ilanları getiriliyor - Sayfa: $page');
       
-      // Örnek şirket ID'leri - gerçek implementasyonda API'den gelecek
-      const exampleCompanyIds = [1, 2, 3, 4, 5];
-      final List<JobListingResponse> allJobs = [];
+      // Kullanıcı token'ını al
+      final prefs = await SharedPreferences.getInstance();
+      final userToken = prefs.getString('userToken');
+      
+      // API isteği parametrelerini hazırla
+      final requestData = JobListRequest(
+        userToken: userToken,
+        catID: catID,
+        workTypes: workTypes,
+        cityID: cityID,
+        districtID: districtID,
+        publishDate: publishDate,
+        sort: sort,
+        latitude: latitude,
+        longitude: longitude,
+        page: page,
+      );
 
-      for (final companyId in exampleCompanyIds) {
-        final response = await fetchCompanyJobs(companyId);
-        if (response.isSuccessful && response.data != null) {
-          allJobs.add(response);
-        }
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl$_companyJobsEndpoint/jobListAll');
+      final headers = AuthService.getHeaders();
+      final body = jsonEncode(requestData.toJson());
+
+      logger.debug('API isteği gönderiliyor: ${uri.toString()}');
+      logger.debug('Request body: $body');
+
+      // HTTP POST isteği gönder
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: body,
+      ).timeout(_connectTimeout);
+
+      logger.debug('API yanıtı alındı - Status: ${response.statusCode}');
+
+      // Yanıtı parse et
+      return _parseJobListResponse(response);
+
+    } catch (e) {
+      logger.error('Tüm iş ilanları getirme hatası: $e');
+      return JobListResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
+  /// HTTP yanıtını JobListResponse'a çevirir
+  JobListResponse _parseJobListResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return JobListResponse(
+          error: true,
+          success: false,
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
+      }
+      
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return JobListResponse.fromJson(jsonResponse);
+      } else {
+        // Normal error handling
+        return JobListResponse.fromJson(jsonResponse);
       }
 
-      return allJobs;
+    } catch (e) {
+      logger.error('JSON parse hatası: $e');
+      return JobListResponse(
+        error: true,
+        success: false,
+        errorMessage: 'Veri işleme hatası',
+      );
+    }
+  }
+
+  /// Tüm iş ilanlarını getirir (genel listing) - Eski metod, geriye uyumluluk için
+  Future<List<JobListingResponse>> fetchAllJobs({int? limit, int? offset}) async {
+    try {
+      logger.debug('Tüm iş ilanları getiriliyor (eski metod)');
+      
+      // Yeni API endpoint'ini kullan
+      final response = await fetchAllJobListings();
+      
+      if (response.isSuccessful && response.data != null) {
+        // Yeni formatı eski formata çevir
+        final List<JobListingResponse> convertedResponses = [];
+        
+        // JobListItem'ları şirket bazında grupla
+        final Map<int, List<JobListItem>> companyGroups = {};
+        
+        for (final job in response.data!.jobs) {
+          if (!companyGroups.containsKey(job.compID)) {
+            companyGroups[job.compID] = [];
+          }
+          companyGroups[job.compID]!.add(job);
+        }
+        
+        // Her şirket için JobListingResponse oluştur
+        for (final entry in companyGroups.entries) {
+          final companyId = entry.key;
+          final jobs = entry.value;
+          
+          if (jobs.isNotEmpty) {
+            // Şirket bilgilerini ilk iş ilanından al
+            final firstJob = jobs.first;
+            
+            // CompanyDetailModel oluştur
+            final company = CompanyDetailModel(
+              compID: firstJob.compID,
+              compName: firstJob.compName,
+              compDesc: '',
+              compAddress: '',
+              compCity: firstJob.jobCity,
+              compDistrict: firstJob.jobDistrict ?? '',
+              profilePhoto: firstJob.jobImage,
+            );
+            
+            // JobModel listesi oluştur
+            final jobModels = jobs.map((job) => JobModel(
+              jobID: job.jobID,
+              jobTitle: job.jobTitle,
+              workType: job.workType,
+              showDate: job.showDate,
+            )).toList();
+            
+            // JobListingData oluştur
+            final listingData = JobListingData(
+              company: company,
+              jobs: jobModels,
+            );
+            
+            // JobListingResponse oluştur
+            final listingResponse = JobListingResponse(
+              error: false,
+              success: true,
+              data: listingData,
+              errorMessage: '',
+            );
+            
+            convertedResponses.add(listingResponse);
+          }
+        }
+        
+        return convertedResponses;
+      } else {
+        return [];
+      }
 
     } catch (e) {
       logger.error('Tüm iş ilanları getirme hatası: $e');
@@ -360,6 +515,125 @@ class JobService {
         error: true,
         success: false,
         successMessage: '',
+        errorMessage: 'Veri işleme hatası',
+      );
+    }
+  }
+
+  /// Yeni iş ilanı ekler
+  /// [companyId] - Şirket ID'si
+  /// [request] - İş ilanı ekleme request'i
+  Future<JobOperationResponse> addJob(int companyId, AddJobRequest request) async {
+    try {
+      logger.debug('Yeni iş ilanı ekleniyor - Şirket ID: $companyId');
+
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl/service/user/company/$companyId/addJob');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+
+      logger.debug('API isteği gönderiliyor: ${uri.toString()}');
+      logger.debug('Request body: ${jsonEncode(request.toJson())}');
+
+      // HTTP isteği gönder
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(_connectTimeout);
+
+      logger.debug('API yanıtı alındı - Status: ${response.statusCode}');
+
+      // Token hatası kontrolü
+      if (response.statusCode == 403) {
+        return JobOperationResponse.fromJson(jsonDecode(response.body), isTokenError: true);
+      }
+
+      // Yanıtı parse et
+      return _parseJobOperationResponse(response);
+
+    } catch (e) {
+      logger.error('İş ilanı ekleme hatası: $e');
+      return JobOperationResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
+  /// İş ilanını günceller
+  /// [companyId] - Şirket ID'si
+  /// [request] - İş ilanı güncelleme request'i
+  Future<JobOperationResponse> updateJob(int companyId, UpdateJobRequest request) async {
+    try {
+      logger.debug('İş ilanı güncelleniyor - Şirket ID: $companyId, İş ID: ${request.jobID}');
+
+      // API isteği hazırla
+      final uri = Uri.parse('$_baseUrl/service/user/company/$companyId/updateJob');
+      final headers = AuthService.getHeaders(userToken: request.userToken);
+
+      logger.debug('API isteği gönderiliyor: ${uri.toString()}');
+      logger.debug('Request body: ${jsonEncode(request.toJson())}');
+
+      // HTTP isteği gönder
+      final response = await http.put(
+        uri,
+        headers: headers,
+        body: jsonEncode(request.toJson()),
+      ).timeout(_connectTimeout);
+
+      logger.debug('API yanıtı alındı - Status: ${response.statusCode}');
+
+      // Token hatası kontrolü
+      if (response.statusCode == 403) {
+        return JobOperationResponse.fromJson(jsonDecode(response.body), isTokenError: true);
+      }
+
+      // Yanıtı parse et
+      return _parseJobOperationResponse(response);
+
+    } catch (e) {
+      logger.error('İş ilanı güncelleme hatası: $e');
+      return JobOperationResponse(
+        error: true,
+        success: false,
+        errorMessage: _getErrorMessage(e),
+      );
+    }
+  }
+
+  /// HTTP yanıtını JobOperationResponse'a çevirir
+  JobOperationResponse _parseJobOperationResponse(http.Response response) {
+    try {
+      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+      
+      // Özel status kod kontrolü
+      final has410 = jsonResponse.containsKey('410');
+      final has417 = jsonResponse.containsKey('417');
+      
+      if (has417) {
+        // 417 status kod hata demektir
+        return JobOperationResponse(
+          error: true,
+          success: false,
+          status417: jsonResponse['417'],
+          errorMessage: jsonResponse['417'] ?? 'Bilinmeyen hata',
+        );
+      }
+      
+      if (has410 || (!jsonResponse['error'] && jsonResponse['success'])) {
+        // 410 status kod başarılı demektir
+        return JobOperationResponse.fromJson(jsonResponse);
+      } else {
+        // Normal error handling
+        return JobOperationResponse.fromJson(jsonResponse);
+      }
+
+    } catch (e) {
+      logger.error('JSON parse hatası: $e');
+      return JobOperationResponse(
+        error: true,
+        success: false,
         errorMessage: 'Veri işleme hatası',
       );
     }

@@ -36,6 +36,15 @@ class JobViewModel extends ChangeNotifier {
   String? _favoriteSuccessMessage;
   String? _favoriteErrorMessage;
 
+  // Yeni API endpoint için state variables
+  List<JobListItem> _jobListItems = [];
+  JobListData? _jobListData;
+  int _currentPage = 1;
+  int _totalPages = 1;
+  int _totalItems = 0;
+  bool _hasMorePages = true;
+  bool _isLoadingMore = false;
+
   // Public getters
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
@@ -45,6 +54,16 @@ class JobViewModel extends ChangeNotifier {
   JobListingData? get selectedCompanyJobs => _selectedCompanyJobs;
   bool get hasJobs => _jobListings.isNotEmpty;
   int get totalJobCount => _jobListings.fold(0, (sum, data) => sum + data.jobs.length);
+  
+  // Yeni API endpoint için getters
+  List<JobListItem> get jobListItems => _jobListItems;
+  JobListData? get jobListData => _jobListData;
+  int get currentPage => _currentPage;
+  int get totalPages => _totalPages;
+  int get totalItems => _totalItems;
+  bool get hasMorePages => _hasMorePages;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasJobListItems => _jobListItems.isNotEmpty;
   
   // Job detail getters
   bool get isJobDetailLoading => _isJobDetailLoading;
@@ -242,42 +261,182 @@ class JobViewModel extends ChangeNotifier {
     _jobDetailErrorMessage = null;
   }
 
-  /// Tüm iş ilanlarını yükler
-  Future<void> loadAllJobs({bool showLoading = true}) async {
+  /// Yeni API endpoint ile tüm iş ilanlarını yükler
+  Future<void> loadAllJobListings({
+    int? catID,
+    List<int>? workTypes,
+    int? cityID,
+    int? districtID,
+    String? publishDate,
+    String? sort,
+    String? latitude,
+    String? longitude,
+    bool refresh = false,
+    bool showLoading = true,
+  }) async {
     try {
-      if (showLoading) {
+      if (refresh) {
+        _setRefreshing(true);
+        _currentPage = 1;
+        _jobListItems.clear();
+        _jobListData = null;
+      } else if (showLoading) {
         _setLoading(true);
       }
+      
       _setError(null);
 
-      logger.debug('Tüm iş ilanları yükleniyor...');
+      logger.debug('Tüm iş ilanları yükleniyor - Sayfa: $_currentPage');
 
-      final responses = await _jobService.fetchAllJobs();
-      final List<JobListingData> newJobListings = [];
+      final response = await _jobService.fetchAllJobListings(
+        catID: catID,
+        workTypes: workTypes,
+        cityID: cityID,
+        districtID: districtID,
+        publishDate: publishDate,
+        sort: sort,
+        latitude: latitude,
+        longitude: longitude,
+        page: _currentPage,
+      );
 
-      for (final response in responses) {
-        if (response.isSuccessful && response.data != null) {
-          newJobListings.add(response.data!);
-        } else if (response.displayMessage != null) {
-          logger.warning('İş ilanı yükleme uyarısı: ${response.displayMessage}');
+      if (response.isSuccessful && response.data != null) {
+        _jobListData = response.data;
+        _totalPages = response.data!.totalPages;
+        _totalItems = response.data!.totalItems;
+        _hasMorePages = _currentPage < _totalPages;
+        
+        if (refresh) {
+          _jobListItems = response.data!.jobs;
+        } else {
+          _jobListItems.addAll(response.data!.jobs);
         }
-      }
-
-      _jobListings = newJobListings;
-      logger.debug('${_jobListings.length} şirketin iş ilanları yüklendi');
-
-      if (_jobListings.isEmpty) {
-        _setError('Henüz iş ilanı bulunmuyor');
+        
+        // Favori durumlarını güncelle
+        for (final job in response.data!.jobs) {
+          _favoriteStates[job.jobID] = job.isFavorite;
+        }
+        
+        logger.debug('İş ilanları başarıyla yüklendi: ${response.data!.jobs.length} ilan');
+      } else {
+        final errorMsg = response.displayMessage ?? 'İş ilanları yüklenemedi';
+        _setError(errorMsg);
+        
+        if (refresh) {
+          _jobListItems.clear();
+          _jobListData = null;
+        }
       }
 
     } catch (e) {
       logger.error('İş ilanları yükleme hatası: $e');
-      _setError('İş ilanları yüklenirken hata oluştu: $e');
+      _setError('İş ilanları yüklenirken hata oluştu');
+      
+      if (refresh) {
+        _jobListItems.clear();
+        _jobListData = null;
+      }
     } finally {
-      if (showLoading) {
+      if (refresh) {
+        _setRefreshing(false);
+      } else if (showLoading) {
         _setLoading(false);
       }
     }
+  }
+
+  /// Daha fazla iş ilanı yükler (pagination)
+  Future<void> loadMoreJobs({
+    int? catID,
+    List<int>? workTypes,
+    int? cityID,
+    int? districtID,
+    String? publishDate,
+    String? sort,
+    String? latitude,
+    String? longitude,
+  }) async {
+    if (_isLoadingMore || !_hasMorePages) return;
+
+    try {
+      _isLoadingMore = true;
+      notifyListeners();
+
+      _currentPage++;
+
+      logger.debug('Daha fazla iş ilanı yükleniyor - Sayfa: $_currentPage');
+
+      final response = await _jobService.fetchAllJobListings(
+        catID: catID,
+        workTypes: workTypes,
+        cityID: cityID,
+        districtID: districtID,
+        publishDate: publishDate,
+        sort: sort,
+        latitude: latitude,
+        longitude: longitude,
+        page: _currentPage,
+      );
+
+      if (response.isSuccessful && response.data != null) {
+        _jobListData = response.data;
+        _totalPages = response.data!.totalPages;
+        _totalItems = response.data!.totalItems;
+        _hasMorePages = _currentPage < _totalPages;
+        
+        _jobListItems.addAll(response.data!.jobs);
+        
+        // Favori durumlarını güncelle
+        for (final job in response.data!.jobs) {
+          _favoriteStates[job.jobID] = job.isFavorite;
+        }
+        
+        logger.debug('Daha fazla iş ilanı yüklendi: ${response.data!.jobs.length} ilan');
+      } else {
+        // Hata durumunda sayfa numarasını geri al
+        _currentPage--;
+        final errorMsg = response.displayMessage ?? 'Daha fazla ilan yüklenemedi';
+        _setError(errorMsg);
+      }
+
+    } catch (e) {
+      // Hata durumunda sayfa numarasını geri al
+      _currentPage--;
+      logger.error('Daha fazla iş ilanı yükleme hatası: $e');
+      _setError('Daha fazla ilan yüklenirken hata oluştu');
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
+  /// İş ilanlarını yeniler
+  Future<void> refreshJobListings({
+    int? catID,
+    List<int>? workTypes,
+    int? cityID,
+    int? districtID,
+    String? publishDate,
+    String? sort,
+    String? latitude,
+    String? longitude,
+  }) async {
+    await loadAllJobListings(
+      catID: catID,
+      workTypes: workTypes,
+      cityID: cityID,
+      districtID: districtID,
+      publishDate: publishDate,
+      sort: sort,
+      latitude: latitude,
+      longitude: longitude,
+      refresh: true,
+    );
+  }
+
+  /// Tüm iş ilanlarını yükler (geriye uyumluluk için)
+  Future<void> loadAllJobs({bool showLoading = true}) async {
+    await loadAllJobListings(showLoading: showLoading);
   }
 
   /// Belirli bir şirketin iş ilanlarını yükler

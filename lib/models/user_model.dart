@@ -66,7 +66,7 @@ class UserModel {
       isApproved: json['isApproved'] ?? false,
       isComp: json['isComp'] ?? false,
       company: json['isComp'] == true && json['company'] is Map<String, dynamic>
-          ? CompanyModel.fromJson(json['company'])
+          ? CompanyModel.fromJson(json['company']..['compID'] = json['userID'])
           : null,
     );
   }
@@ -74,6 +74,7 @@ class UserModel {
 
 /// Kurumsal kullanıcı verilerini temsil eden model.
 class CompanyModel {
+  final int compID;
   final String compName;
   final String compDesc;
   final String compAddress;
@@ -83,8 +84,20 @@ class CompanyModel {
   final int compDistrictNo;
   final String compTaxNumber;
   final String compTaxPlace;
+  final String compWebSite;
+  final int compPersonNumber;
+  final int compSectorID;
+  final String compSector;
+  final int jobLimit;
+  final int totalJobs;
+  final int activeJobs;
+  final int passiveJobs;
+  final int totalApplications;
+  final int totalFavorites;
+  final bool isJobAdd;
 
   CompanyModel({
+    required this.compID,
     required this.compName,
     required this.compDesc,
     required this.compAddress,
@@ -94,10 +107,22 @@ class CompanyModel {
     required this.compDistrictNo,
     required this.compTaxNumber,
     required this.compTaxPlace,
+    required this.compWebSite,
+    required this.compPersonNumber,
+    required this.compSectorID,
+    required this.compSector,
+    required this.jobLimit,
+    required this.totalJobs,
+    required this.activeJobs,
+    required this.passiveJobs,
+    required this.totalApplications,
+    required this.totalFavorites,
+    required this.isJobAdd,
   });
 
   factory CompanyModel.fromJson(Map<String, dynamic> json) {
     return CompanyModel(
+      compID: json['compID'] ?? 0,
       compName: json['compName'] ?? '',
       compDesc: json['compDesc'] ?? '',
       compAddress: json['compAddress'] ?? '',
@@ -107,7 +132,53 @@ class CompanyModel {
       compDistrictNo: json['compDistrictNo'] ?? 0,
       compTaxNumber: json['compTaxNumber'] ?? '',
       compTaxPlace: json['compTaxPlace'] ?? '',
+      compWebSite: json['compWebSite'] ?? '',
+      compPersonNumber: json['compPersonNumber'] ?? 0,
+      compSectorID: json['compSectorID'] ?? 0,
+      compSector: json['compSector'] ?? '',
+      jobLimit: json['jobLimit'] ?? 0,
+      totalJobs: json['totalJobs'] ?? 0,
+      activeJobs: json['activeJobs'] ?? 0,
+      passiveJobs: json['passiveJobs'] ?? 0,
+      totalApplications: json['totalApplications'] ?? 0,
+      totalFavorites: json['totalFavorites'] ?? 0,
+      isJobAdd: json['isJobAdd'] ?? false,
     );
+  }
+
+  /// Şirket web sitesi var mı kontrol eder
+  bool get hasWebsite => compWebSite.isNotEmpty;
+
+  /// Çalışan sayısı formatlanmış haliyle döner
+  String get formattedEmployeeCount {
+    if (compPersonNumber == 0) return 'Belirtilmemiş';
+    if (compPersonNumber == 1) return '1 çalışan';
+    return '$compPersonNumber çalışan';
+  }
+
+  /// Tam lokasyon bilgisini döner
+  String get fullLocation {
+    final List<String> locationParts = [];
+    if (compAddress.isNotEmpty) locationParts.add(compAddress);
+    if (compDistrict.isNotEmpty) locationParts.add(compDistrict);
+    if (compCity.isNotEmpty) locationParts.add(compCity);
+    return locationParts.join(', ');
+  }
+
+  /// İş ilanı ekleme hakkı var mı
+  bool get canAddJob => isJobAdd && !isJobLimitReached;
+
+  /// İş ilanı limiti dolmuş mu
+  bool get isJobLimitReached => activeJobs >= jobLimit;
+
+  /// Kalan iş ilanı hakkı
+  int get remainingJobSlots => (jobLimit - activeJobs).clamp(0, jobLimit);
+
+  /// Limit durumu açıklaması
+  String get limitStatusText {
+    if (!isJobAdd) return 'İş ilanı ekleme yetkiniz bulunmamaktadır';
+    if (isJobLimitReached) return 'İş ilanı limitiniz dolmuştur ($activeJobs/$jobLimit)';
+    return 'Kalan iş ilanı hakkınız: $remainingJobSlots';
   }
 }
 

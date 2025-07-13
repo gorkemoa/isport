@@ -816,3 +816,323 @@ class EmptyJobsWidget extends StatelessWidget {
     ).animate().fadeIn(duration: 400.ms).scale();
   }
 } 
+
+/// Modern iş ilanı listesi kartı widget'ı (JobListItem için)
+class JobListItemCard extends StatelessWidget {
+  final JobListItem job;
+  final VoidCallback? onTap;
+  final VoidCallback? onApply;
+  final VoidCallback? onFavoriteToggle;
+  final bool showCompanyInfo;
+  final bool showApplyButton;
+  final bool showFavoriteButton;
+  final bool isFavorite;
+  final bool isFavoriteToggling;
+
+  const JobListItemCard({
+    super.key,
+    required this.job,
+    this.onTap,
+    this.onApply,
+    this.onFavoriteToggle,
+    this.showCompanyInfo = true,
+    this.showApplyButton = true,
+    this.showFavoriteButton = true,
+    this.isFavorite = false,
+    this.isFavoriteToggling = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap?.call();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+          border: Border.all(
+            color: Colors.grey.withOpacity(0.15),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Şirket bilgileri ve favori butonu
+            if (showCompanyInfo) ...[
+              Row(
+                children: [
+                  Expanded(child: _buildCompanyHeader()),
+                  if (showFavoriteButton && onFavoriteToggle != null)
+                    _buildFavoriteButton(),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+            
+            // İş başlığı
+            Text(
+              job.jobTitle,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF374151),
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            
+            const SizedBox(height: 6),
+            
+            // İş açıklaması (kısa)
+            if (job.jobDesc.isNotEmpty) ...[
+              Text(
+                job.jobDesc,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                  height: 1.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+            ],
+            
+            // İş detayları
+            Row(
+              children: [
+                _buildInfoChip(
+                  icon: Icons.work_outline,
+                  text: job.workType,
+                  color: const Color(0xFF059669),
+                ),
+                const SizedBox(width: 8),
+                _buildInfoChip(
+                  icon: Icons.schedule_outlined,
+                  text: job.showDate,
+                  color: AppColors.primary,
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 10),
+            
+            // Alt bilgiler
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                if (showCompanyInfo)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 12,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 2),
+                        Expanded(
+                          child: Text(
+                            job.jobDistrict != null 
+                                ? '${job.jobDistrict}, ${job.jobCity}'
+                                : job.jobCity,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (showApplyButton && onApply != null) ...[
+                      GestureDetector(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          onApply?.call();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.send,
+                                size: 8,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Başvur',
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompanyHeader() {
+    return Row(
+      children: [
+        // Şirket logosu
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: job.jobImage.isNotEmpty
+                ? CachedNetworkImage(
+                    imageUrl: job.jobImage,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      color: Colors.grey[200],
+                      child: Icon(
+                        Icons.business,
+                        size: 16,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: Icon(
+                        Icons.business,
+                        size: 16,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+                  )
+                : Icon(
+                    Icons.business,
+                    size: 16,
+                    color: Colors.grey[400],
+                  ),
+          ),
+        ),
+        
+        const SizedBox(width: 8),
+        
+        // Şirket adı
+        Expanded(
+          child: Text(
+            job.compName,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF374151),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFavoriteButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onFavoriteToggle?.call();
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: isFavorite ? Colors.red[50] : Colors.grey[50],
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isFavorite ? Colors.red[200]! : Colors.grey[200]!,
+            width: 1,
+          ),
+        ),
+        child: isFavoriteToggling
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                ),
+              )
+            : Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                size: 16,
+                color: isFavorite ? Colors.red[600] : Colors.grey[400],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 10,
+            color: color,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+} 

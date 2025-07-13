@@ -9,6 +9,7 @@ import 'viewmodels/job_viewmodel.dart';
 import 'viewmodels/company_viewmodel.dart';
 import 'viewmodels/application_viewmodel.dart';
 import 'viewmodels/favorites_viewmodel.dart';
+import 'viewmodels/employer_viewmodel.dart';
 import 'views/login_screen.dart';
 import 'views/job_seeker/job_seeker_home_screen.dart';
 import 'views/employer/employer_home_screen.dart';
@@ -49,6 +50,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CompanyViewModel()),
         ChangeNotifierProvider(create: (_) => ApplicationViewModel()),
         ChangeNotifierProvider(create: (_) => FavoritesViewModel()),
+        ChangeNotifierProvider(create: (_) => EmployerViewModel()),
       ],
       child: MaterialApp(
         title: 'iSport',
