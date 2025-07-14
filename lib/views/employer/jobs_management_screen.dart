@@ -156,12 +156,12 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
           icon: Icon(
             Icons.refresh,
             color: AppColors.textBody,
-            size: 20,
+            size: 16,
           ),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.background,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
           ),
         ),
@@ -204,7 +204,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
             height: 48,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: CircularProgressIndicator(
               strokeWidth: 3,
@@ -215,7 +215,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
           Text(
             'İş ilanları yükleniyor...',
             style: GoogleFonts.inter(
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.w500,
               color: AppColors.textBody,
             ),
@@ -235,7 +235,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
             height: 64,
             decoration: BoxDecoration(
               color: Colors.red[50],
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
               Icons.error_outline,
@@ -268,7 +268,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -295,11 +295,11 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
             height: 80,
             decoration: BoxDecoration(
               color: AppColors.background,
-              borderRadius: BorderRadius.circular(40),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Icon(
               Icons.business_outlined,
-              size: 40,
+              size: 32,
               color: AppColors.textLight,
             ),
           ),
@@ -352,10 +352,10 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
         const SizedBox(height: 16),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(4),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -412,44 +412,13 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: company.canAddJob ? Colors.green[50] : Colors.red[50],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: company.canAddJob ? Colors.green[200]! : Colors.red[200]!,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                company.canAddJob ? Icons.check_circle : Icons.warning,
-                color: company.canAddJob ? Colors.green[600] : Colors.red[600],
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  company.limitStatusText,
-                  style: GoogleFonts.inter(
-                    color: company.canAddJob ? Colors.green[700] : Colors.red[700],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
 
   Widget _buildOverviewStat(String title, String value, IconData icon, Color color) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(left: 10, right: 10, top: 8, bottom: 10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
@@ -461,7 +430,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
         children: [
           Icon(
             icon,
-            size: 24,
+            size: 18,
             color: color,
           ),
           const SizedBox(height: 8),
@@ -536,7 +505,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
 
   Widget _buildJobsErrorState() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -571,7 +540,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
             child: Text(
@@ -637,11 +606,11 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
+            blurRadius: 1,
             offset: const Offset(0, 2),
           ),
         ],
@@ -650,7 +619,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(5),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -660,7 +629,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
                       child: Text(
                         job.jobTitle,
                         style: GoogleFonts.inter(
-                          fontSize: 18,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textTitle,
                         ),
@@ -678,7 +647,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
                       child: Text(
                         job.workType,
                         style: GoogleFonts.inter(
-                          fontSize: 12,
+                          fontSize: 8,
                           fontWeight: FontWeight.w500,
                           color: _getWorkTypeColor(job.workType),
                         ),
@@ -692,7 +661,7 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
                   Text(
                     job.shortDescription,
                     style: GoogleFonts.inter(
-                      fontSize: 14,
+                      fontSize: 10,
                       color: AppColors.textLight,
                     ),
                     maxLines: 2,
@@ -703,13 +672,13 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
                 
                 Row(
                   children: [
-                    Icon(Icons.location_on, size: 16, color: AppColors.textLight),
+                    Icon(Icons.location_on, size: 11, color: AppColors.textLight),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         job.formattedLocation,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: 10,
                           color: AppColors.textLight,
                         ),
                       ),
@@ -720,13 +689,13 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
                 
                 Row(
                   children: [
-                    Icon(Icons.attach_money, size: 16, color: AppColors.textLight),
+                    Icon(Icons.payments, size: 16, color: AppColors.textLight),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         job.formattedSalary,
                         style: GoogleFonts.inter(
-                          fontSize: 14,
+                          fontSize: 10,
                           color: AppColors.textLight,
                         ),
                       ),
@@ -745,15 +714,15 @@ class _JobsManagementScreenState extends State<JobsManagementScreen> {
           
           // Footer
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(5),
             child: Row(
               children: [
-                Icon(Icons.schedule, size: 16, color: AppColors.textLight),
-                const SizedBox(width: 4),
+                Icon(Icons.schedule, size: 12, color: AppColors.textLight),
+                const SizedBox(width: 1),
                 Text(
-                  job.showDate,
+                  job.showDate.toString(),
                   style: GoogleFonts.inter(
-                    fontSize: 12,
+                    fontSize: 10,
                     color: AppColors.textLight,
                   ),
                 ),
